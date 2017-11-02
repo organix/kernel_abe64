@@ -27,10 +27,12 @@ test_pre()
 
 	DBUG_ENTER("test_pre");
 
-	DBUG_PRINT("", ("sizeof(int)=%d", sizeof(int)));
-	DBUG_PRINT("", ("sizeof(CONS*)=%d", sizeof(CONS*)));
-	DBUG_PRINT("", ("sizeof(BEH)=%d", sizeof(BEH)));
+	DBUG_PRINT("", ("sizeof(int)=%d", sizeof(int)));  /* expected: 4 */
+	DBUG_PRINT("", ("sizeof(CONS*)=%d", sizeof(CONS*)));  /* expected: 8 */
+	DBUG_PRINT("", ("sizeof(BEH)=%d", sizeof(BEH)));  /* expected: 8 */
+#if 0
 	assert(sizeof(int) == sizeof(CONS*));
+#endif
 	assert(sizeof(BEH) == sizeof(CONS*));
 
 	DBUG_PRINT("", ("NIL=16#%08lx (%p)", NIL, NIL));
@@ -46,18 +48,7 @@ test_pre()
 	assert(TRUE == ((BOOL)(0 == 0)));
 	assert(FALSE == ((BOOL)(0 != 0)));
 
-#if TYPETAG_USES_3MSB
-	DBUG_PRINT("", ("Type tag in MSB[31:29]"));
-#endif /* TYPETAG_USES_3MSB */
-#if TYPETAG_USES_2LSB
 	DBUG_PRINT("", ("Type tag in LSB[1:0]"));
-#endif /* TYPETAG_USES_2LSB */
-#if TYPETAG_USES_3LSB
-	DBUG_PRINT("", ("Type tag in LSB[2/1:0]"));
-#endif /* TYPETAG_USES_3LSB */
-#if TYPETAG_USES_1LSB_2MSB
-	DBUG_PRINT("", ("Type tag in LSB[0]+MSB[31:30]"));
-#endif /* TYPETAG_USES_1LSB_2MSB */
 	DBUG_PRINT("", ("_Program[]=16#%08lx (%p)", _Program, _Program));
 	assert(_Program == MK_PTR(MK_REF(_Program)));
 
