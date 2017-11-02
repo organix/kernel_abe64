@@ -22,3 +22,19 @@ Our target architecture is [LP64](https://en.wikipedia.org/wiki/64-bit_computing
 ```
 
 The Boolean values `TRUE` and `FALSE` **must** be encoded as `1` and `0` respectively, for compatibility with C-language definitions. Also, C requires `NULL` to also be `0`, but we do not use `NULL` directly. Instead, there is a statically-allocated `CONS` which is hard-coded to represent `NIL` for list-building purposes. Dynamically-allocated memory will never be placed at address `0`, so `TRUE` and `FALSE` do not conflict with type-tagged allocated values. Literal values (Number/Address) use logical right-shift to recover the value they represent. Reference values (Pair/Actor/Atom) simply mask off the type tag to recover the address they represent.
+
+### Internal Structure
+
+```
+           +---+---+ WHAT
+EVENT ---> | o | o-------> message
+           +-|-+---+
+        SELF |
+             v
+           +---+---+ MINE
+           | o | o-------> state
+           +-|-+---+
+        THIS |
+             v
+          behavior
+```
