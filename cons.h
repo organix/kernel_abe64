@@ -1,7 +1,7 @@
 /*
  * cons.h -- LISP-like "CONS" cell management
  *
- * Copyright 2008-2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #ifndef CONS_H
 #define CONS_H
@@ -13,12 +13,6 @@
 #define	TYPETAG_USES_2LSB		1
 #define	TYPETAG_USES_3LSB		0
 #define	TYPETAG_USES_1LSB_2MSB	0
-
-#if TYPETAG_USES_3LSB
-#define	NUMBER_IS_FUNC	0	/* numberp(p) != funcp(p) */
-#else
-#define	NUMBER_IS_FUNC	1	/* numberp(p) == funcp(p) */
-#endif
 
 extern CELL		nil__cons;
 

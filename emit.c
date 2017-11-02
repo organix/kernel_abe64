@@ -4,7 +4,7 @@
  * NOTE: THESE PROCEDURES ARE INTENDED FOR DEBUGGING ONLY
  *       THEIR IMPLEMENTATION IS EXPEDIENT AND UGLY!
  *
- * Copyright 2008 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #include "emit.h"
 #include "sbuf.h"
@@ -130,11 +130,6 @@ depth_to_str(int depth, char* buf, CONS* cons)
 		}
 	} else if (numberp(cons)) {
 		sprintf(buf, "%d", MK_INT(cons));
-#if NUMBER_IS_FUNC
-#else
-	} else if (funcp(cons)) {
-		sprintf(buf, "^%lx", (ulint)MK_PTR(cons));
-#endif
 	} else if (depth < 0) {			/* depth limit */
 		strcpy(buf, "...");
 	} else if (actorp(cons)) {
@@ -201,11 +196,7 @@ test_cons_to_str()
 	ASSERT_CONS_TO_STR(NUMBER(-1), "-1", actual);
 
 	value = MK_FUNC(test_cons_to_str);
-#if NUMBER_IS_FUNC
 	sprintf(expect, "%d", (int)MK_PTR(value));
-#else
-	sprintf(expect, "^%lx", (ulint)MK_PTR(value));
-#endif
 	ASSERT_CONS_TO_STR(value, expect, actual);
 
 	value = CFG_ACTOR(NULL, sink_beh, NIL);
@@ -295,11 +286,6 @@ emit_cons(CONS* cons, int indent, void (*emit)(char c, void* ctx), void* ctx)
 		}
 	} else if (numberp(cons)) {
 		sprintf(buf, "%d", MK_INT(cons));
-#if NUMBER_IS_FUNC
-#else
-	} else if (funcp(cons)) {
-		sprintf(buf, "@%p", MK_PTR(cons));
-#endif
 	} else if (consp(cons)) {
 		if (emit_depth > EMIT_DEPTH_LIMIT) {
 			sprintf(buf, "[%p;%p]", (void*)car(cons), (void*)cdr(cons));
@@ -410,11 +396,7 @@ test_emit()
 
 	clear_sbuf(sbuf);
 	emit_cons(cons(NUMBER(0), MK_FUNC(test_emit)), 0, sbuf_emit, sbuf);
-#if NUMBER_IS_FUNC
 	sprintf(tmp, "(0 : %d)", (int)test_emit);
-#else
-	sprintf(tmp, "(0 : @%p)", (void*)(ulint)test_emit);
-#endif
 	DBUG_PRINT("", ("%s = %s", tmp, sbuf->buf));
 	assert(strcmp(tmp, sbuf->buf) == 0);
 

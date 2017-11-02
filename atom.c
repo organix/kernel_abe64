@@ -1,7 +1,7 @@
 /*
  * atom.c -- Atomic symbol management
  *
- * Copyright 2008-2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #include "atom.h"
 #include "abe.h"
@@ -182,14 +182,8 @@ test_number()
 	assert(!nilp(p));
 	assert(!consp(p));
 	assert(!atomp(p));
-#if NUMBER_IS_FUNC
-#if TYPETAG_USES_2LSB
 	assert(funcp(p));
 	assert(!boolp(p));
-#endif
-#else
-	assert(!funcp(p));
-#endif
 
 	j = 1;
 	p = NUMBER(j);
@@ -200,11 +194,7 @@ test_number()
 	assert(!nilp(p));
 	assert(!consp(p));
 	assert(!atomp(p));
-#if NUMBER_IS_FUNC
 	assert(funcp(p));
-#else
-	assert(!funcp(p));
-#endif
 	assert(!boolp(p));
 
 	j = -1;
@@ -216,11 +206,7 @@ test_number()
 	assert(!nilp(p));
 	assert(!consp(p));
 	assert(!atomp(p));
-#if NUMBER_IS_FUNC
 	assert(funcp(p));
-#else
-	assert(!funcp(p));
-#endif
 	assert(!boolp(p));
 
 	j = 0x07FFFFFF;
