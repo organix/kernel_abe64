@@ -1,7 +1,7 @@
 /*
  * atom.h -- Atomic symbol management
  *
- * Copyright 2008-2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #ifndef ATOM_H
 #define ATOM_H

@@ -1,7 +1,7 @@
 /*
  * types.h -- system-wide type definitions
  *
- * Copyright 2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2009-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #ifndef TYPES_H
 #define TYPES_H

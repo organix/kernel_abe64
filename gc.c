@@ -3,7 +3,7 @@
  *
  * This algorithm is based on Henry Baker's "Treadmill"
  *
- * Copyright 2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2009-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #include "gc.h"
 #include "abe.h"

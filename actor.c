@@ -1,7 +1,7 @@
 /*
  * actor.c -- experimental Actor-model runtime
  *
- * Copyright 2008-2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #include <sys/time.h>		/* gettimeofday(), struct timeval */
 #include "actor.h"

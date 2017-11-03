@@ -1,7 +1,7 @@
 /*
  * actor.h -- experimental Actor-model runtime
  *
- * Copyright 2008-2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #ifndef ACTOR_H
 #define ACTOR_H

@@ -1,11 +1,11 @@
 /*
  * abe.c -- experimental ACTOR-Based Environment
  *
- * Copyright 2008-2009 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "ABE";
-static char	_Version[] = "2009-11-03";
-static char	_Copyright[] = "Copyright 2008-2009 Dale Schumacher";
+static char	_Version[] = "2017-11-02";
+static char	_Copyright[] = "Copyright 2008-2017 Dale Schumacher";
 
 #include <getopt.h>
 #include "abe.h"
