@@ -11,14 +11,16 @@
 #include "dbug.h"
 DBUG_UNIT("gc");
 
-static WORD	gc_phase__mark = -1U;	/* current garbage collection phase marker */
-static WORD	gc_phase__prev = -1U;	/* previous garbage collection phase marker */
+#define	GC_PHASE_INIT	as_word(-1)    /* 2#1111...1111 */
 
-CELL	gc_aged__cell = { as_cons(0U), NIL, GC_PHASE_Z, 0U };
-CELL	gc_scan__cell = { as_cons(0U), NIL, GC_PHASE_Z, 0U };
-CELL	gc_fresh__cell = { as_cons(0U), NIL, GC_PHASE_Z, 0U };
-CELL	gc_free__cell = { as_cons(0U), NIL, GC_PHASE_Z, 0U };
-CELL	gc_perm__cell = { as_cons(0U), NIL, GC_PHASE_Z, 0U };
+static WORD	gc_phase__mark = GC_PHASE_INIT;	/* current GC phase marker */
+static WORD	gc_phase__prev = GC_PHASE_INIT;	/* previous GC phase marker */
+
+CELL	gc_aged__cell = { as_cons(as_word(0)), NIL, GC_PHASE_Z, as_word(0) };
+CELL	gc_scan__cell = { as_cons(as_word(0)), NIL, GC_PHASE_Z, as_word(0) };
+CELL	gc_fresh__cell = { as_cons(as_word(0)), NIL, GC_PHASE_Z, as_word(0) };
+CELL	gc_free__cell = { as_cons(as_word(0)), NIL, GC_PHASE_Z, as_word(0) };
+CELL	gc_perm__cell = { as_cons(as_word(0)), NIL, GC_PHASE_Z, as_word(0) };
 
 static void
 gc_initialize()

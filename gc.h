@@ -8,17 +8,14 @@
 
 #include "types.h"
 
-#define	GC_PHASE_Z		(0x00000000U)
-#define	GC_PHASE_X		(0x40000000U)
-#define	GC_PHASE_0		(0x80000000U)
-#define	GC_PHASE_1		(0xC0000000U)
-#define	GC_PHASE_MASK	(0x3FFFFFFFU)
+#define	GC_PHASE_Z		as_word(0)		/* 2#0000...0000 */
+#define	GC_PHASE_X		as_word(1)		/* 2#0000...0001 */
+#define	GC_PHASE_0		as_word(2)		/* 2#0000...0010 */
+#define	GC_PHASE_1		as_word(3)		/* 2#0000...0011 */
+#define	GC_PHASE_MASK	(~as_word(3))	/* 2#1111...1100 */
 
-#define	as_cell(p)		((CELL*)(p))
-#define	as_cons(p)		((CONS*)(p))
-#define	as_word(p)		((WORD)(p))
-#define	as_indx(p)		(as_word(p) >> 2)
-#define	as_addr(p)		as_cell(as_word(p) << 2)
+#define	as_indx(p)		(as_word(p) & ~GC_PHASE_MASK)
+#define	as_addr(p)		as_cell(as_indx(p))
 
 #define	GC_SIZE(p)		as_word((p)->first)
 #define	GC_SET_SIZE(p,n) ((p)->first = as_cons(n))
