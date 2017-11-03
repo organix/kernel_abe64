@@ -6,6 +6,7 @@ RUN apk add \
     build-base \
     linux-headers
 
-COPY / /
+COPY / /src
+WORKDIR /src
 
 RUN make clean test
