@@ -2617,9 +2617,9 @@ init_kernel()
 
 	a_inert = ACTOR(unit_type, NIL);
 	cfg_add_gc_root(CFG, a_inert);		/* protect from gc */
-	a_true = ACTOR(bool_type, TRUE);
+	a_true = ACTOR(bool_type, BOOLEAN(TRUE));
 	cfg_add_gc_root(CFG, a_true);		/* protect from gc */
-	a_false = ACTOR(bool_type, FALSE);
+	a_false = ACTOR(bool_type, BOOLEAN(FALSE));
 	cfg_add_gc_root(CFG, a_false);		/* protect from gc */
 	a_nil = ACTOR(null_type, NIL);
 	cfg_add_gc_root(CFG, a_nil);		/* protect from gc */

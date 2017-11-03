@@ -9,18 +9,6 @@
 #include <assert.h>
 #include "types.h"
 
-extern CELL		nil__cons;
-
-#define	NIL		as_cons(&nil__cons)
-#define	nilp(p)	((p) == NIL)
-#if 0
-#define	car(p)	((p)->first)
-#define	cdr(p)	((p)->rest)
-#else
-#define	car(p)	_car(p)
-#define	cdr(p)	_cdr(p)
-#endif
-
 #define	BM_TYPE		as_word(3)	/* 2#0000...0011 */
 #define	BF_CONS		as_word(0)	/* 2#0000...0000 */
 #define	BF_ACTOR	as_word(1)	/* 2#0000...0001 */
@@ -50,6 +38,18 @@ extern CELL		nil__cons;
 #define	funcp(p)	(TYPE_OF(p) == BF_FUNC)
 
 #define	map_get(map,key)	map_get_def((map), (key), NULL)
+
+extern CELL		nil__cons;
+
+#define	NIL		as_cons(&nil__cons)
+#define	nilp(p)	((p) == NIL)
+#if 0
+#define	car(p)	((p)->first)
+#define	cdr(p)	((p)->rest)
+#else
+#define	car(p)	_car(p)
+#define	cdr(p)	_cdr(p)
+#endif
 
 BOOL	_nilp(CONS* cons);
 #if 0

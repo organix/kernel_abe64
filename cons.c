@@ -9,7 +9,7 @@
 #include "dbug.h"
 DBUG_UNIT("cons");
 
-CELL		nil__cons = { as_cons(&nil__cons), as_cons(&nil__cons), GC_PHASE_Z, 0U };
+CELL		nil__cons = { NIL, NIL, GC_PHASE_Z, as_word(0) };
 static int	cons_cnt = 0;
 
 BOOL

@@ -9,7 +9,7 @@
 #include "abe.h"
 
 #define	pr(h,t)			cons((h), (t))
-#define	is_pr(p)		(consp(p) && !nilp(p) && !actorp(p))
+#define	is_pr(p)		(consp(p) && !nilp(p))
 #define	hd(p)			car(p)
 #define	tl(p)			cdr(p)
 
