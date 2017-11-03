@@ -40,10 +40,11 @@ extern CELL		nil__cons;
 
 #define	MK_INT(p)	((int)(as_word(p)>>2))
 #define	MK_PTR(p)	((void*)(as_word(p)>>2))
+#define	MK_BOOL(p)	((int)as_word(p))
 
-#define	consp(p)	(((p) != CONS_F) && (TYPE_OF(p) == BF_CONS))
-#define	actorp(p)	(((p) != CONS_T) && (TYPE_OF(p) == BF_ACTOR))
-#define	objectp(p)	(((p) != CONS_T) && (TYPE_OF(p) == BF_OBJECT))
+#define	consp(p)	(((p) != BOOLEAN(FALSE)) && (TYPE_OF(p) == BF_CONS))
+#define	actorp(p)	(((p) != BOOLEAN(TRUE)) && (TYPE_OF(p) == BF_ACTOR))
+#define	objectp(p)	(((p) != BOOLEAN(TRUE)) && (TYPE_OF(p) == BF_OBJECT))
 #define	atomp(p)	(TYPE_OF(p) == BF_ATOM)
 #define	numberp(p)	(TYPE_OF(p) == BF_NUMBER)
 #define	funcp(p)	(TYPE_OF(p) == BF_FUNC)

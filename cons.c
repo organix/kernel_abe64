@@ -133,7 +133,7 @@ equal(CONS* x, CONS* y)
 		return FALSE;
 	}
 	if (consp(x) && consp(y)) {
-		return to_bool(equal(car(x), car(y)) && equal(cdr(x), cdr(y)));
+		return (equal(car(x), car(y)) && equal(cdr(x), cdr(y)));
 	}
 	return FALSE;
 }

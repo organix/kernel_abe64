@@ -29,8 +29,10 @@ test_pre()
 	TRACE(printf("--test_pre--\n"));
 
 	DBUG_PRINT("", ("sizeof(int)=%ld", (ulint)sizeof(int)));  /* expected: 4 */
+	DBUG_PRINT("", ("sizeof(WORD)=%ld", (ulint)sizeof(WORD)));  /* expected: 8 */
 	DBUG_PRINT("", ("sizeof(CONS*)=%ld", (ulint)sizeof(CONS*)));  /* expected: 8 */
 	DBUG_PRINT("", ("sizeof(BEH)=%ld", (ulint)sizeof(BEH)));  /* expected: 8 */
+	assert(sizeof(WORD) == sizeof(CONS*));
 	assert(sizeof(BEH) == sizeof(CONS*));
 
 	DBUG_PRINT("", ("NIL=16#%lx (%p)", as_word(NIL), NIL));
@@ -41,8 +43,8 @@ test_pre()
 
 	DBUG_PRINT("", ("sizeof(BOOL)=%ld", (ulint)sizeof(BOOL))); /* expected: 4 */
 	assert(sizeof(BOOL) == sizeof(int));
-	DBUG_PRINT("", ("TRUE=16#%lx (%p)", as_word(TRUE), TRUE));
-	DBUG_PRINT("", ("FALSE=16#%lx (%p)", as_word(FALSE), FALSE));
+	DBUG_PRINT("", ("TRUE=16#%lx (%p)", as_word(TRUE), BOOLEAN(TRUE)));
+	DBUG_PRINT("", ("FALSE=16#%lx (%p)", as_word(FALSE), BOOLEAN(FALSE)));
 	assert(TRUE);
 	assert(!FALSE);
 	assert(TRUE == ((BOOL)(0 == 0)));

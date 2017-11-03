@@ -108,7 +108,7 @@ depth_to_str(int depth, char* buf, CONS* cons)
 	if (nilp(cons)) {
 		strcpy(buf, "NIL");
 	} else if (boolp(cons)) {
-		strcpy(buf, (to_bool(cons) ? "TRUE" : "FALSE"));
+		strcpy(buf, (MK_BOOL(cons) ? "TRUE" : "FALSE"));
 	} else if (atomp(cons)) {
 		char *q = atom_str(cons);
 		int n = 0;
@@ -181,9 +181,9 @@ test_cons_to_str()
 
 	ASSERT_CONS_TO_STR(NIL, "NIL", actual);
 
-	ASSERT_CONS_TO_STR(CONS_T, "TRUE", actual);
+	ASSERT_CONS_TO_STR(BOOLEAN(TRUE), "TRUE", actual);
 
-	ASSERT_CONS_TO_STR(CONS_F, "FALSE", actual);
+	ASSERT_CONS_TO_STR(BOOLEAN(FALSE), "FALSE", actual);
 
 	ASSERT_CONS_TO_STR(ATOM("TRUE"), "#TRUE", actual);
 
@@ -210,7 +210,7 @@ test_cons_to_str()
 	ASSERT_CONS_TO_STR(cons(NUMBER(0), NIL), "(0, NIL)", actual);
 
 	value = cons(
-		CONS_F, 
+		BOOLEAN(FALSE), 
 		cons(
 			cons(
 				ATOM("x"),
@@ -263,7 +263,7 @@ emit_cons(CONS* cons, int indent, void (*emit)(char c, void* ctx), void* ctx)
 	XDBUG_ENTER("emit_cons");
 	++emit_depth;
 	if (boolp(cons)) {
-		sprintf(buf, to_bool(cons) ? "-T-" : "-F-");
+		sprintf(buf, MK_BOOL(cons) ? "-T-" : "-F-");
 	} else if (nilp(cons)) {
 		sprintf(buf, "NIL");
 	} else if (atomp(cons)) {
@@ -350,12 +350,12 @@ test_emit()
 	TRACE(printf("--test_emit--\n"));
 
 	clear_sbuf(sbuf);
-	emit_cons(CONS_T, 0, sbuf_emit, sbuf);
+	emit_cons(BOOLEAN(TRUE), 0, sbuf_emit, sbuf);
 	DBUG_PRINT("", ("TRUE = %s", sbuf->buf));
 	assert(strcmp("-T-", sbuf->buf) == 0);
 	
 	clear_sbuf(sbuf);
-	emit_cons(CONS_F, 0, sbuf_emit, sbuf);
+	emit_cons(BOOLEAN(FALSE), 0, sbuf_emit, sbuf);
 	DBUG_PRINT("", ("FALSE = %s", sbuf->buf));
 	assert(strcmp("-F-", sbuf->buf) == 0);
 	

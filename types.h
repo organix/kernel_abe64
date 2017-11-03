@@ -51,9 +51,7 @@ struct config {
 typedef	int			BOOL;
 #define	FALSE		as_bool(0)
 #define TRUE		as_bool(1)
-#define	CONS_F		as_cons(FALSE)
-#define CONS_T		as_cons(TRUE)
-#define	to_bool(p)	((p) ? TRUE : FALSE)
-#define	boolp(p)	(((p) == CONS_F) || ((p) == CONS_T))
+#define	BOOLEAN(n)	as_cons(as_word(!!(n)))
+#define	boolp(p)	(((p) == BOOLEAN(FALSE)) || ((p) == BOOLEAN(TRUE)))
 
 #endif /* TYPES_H */
