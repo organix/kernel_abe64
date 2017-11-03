@@ -6,7 +6,10 @@ RUN apk add \
     build-base \
     linux-headers
 
-COPY / /src
 WORKDIR /src
+CMD [ "make", "clean", "test" ]
 
-RUN make clean test
+# recommended usage:
+#
+# docker build -t abe64 .
+# docker run -v $(pwd):/src --rm -it abe64
