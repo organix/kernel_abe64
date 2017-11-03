@@ -12,7 +12,7 @@
 extern CELL		nil__cons;
 
 #define	NIL		as_cons(&nil__cons)
-#define	nilp(p)	to_bool((p)==NIL))
+#define	nilp(p)	((p) == NIL))
 #if 0
 #define	car(p)	((p)->first)
 #define	cdr(p)	((p)->rest)
@@ -41,12 +41,12 @@ extern CELL		nil__cons;
 #define	MK_INT(p)	((int)(as_word(p)>>2))
 #define	MK_PTR(p)	((void*)(as_word(p)>>2))
 
-#define	consp(p)	to_bool(((p) != FALSE) && (TYPE_OF(p) == BF_CONS))
-#define	actorp(p)	to_bool(((p) != TRUE) && (TYPE_OF(p) == BF_ACTOR))
-#define	objectp(p)	to_bool(((p) != TRUE) && (TYPE_OF(p) == BF_OBJECT))
-#define	atomp(p)	to_bool(TYPE_OF(p) == BF_ATOM)
-#define	numberp(p)	to_bool(TYPE_OF(p) == BF_NUMBER)
-#define	funcp(p)	to_bool(TYPE_OF(p) == BF_FUNC)
+#define	consp(p)	(((p) != FALSE) && (TYPE_OF(p) == BF_CONS))
+#define	actorp(p)	(((p) != TRUE) && (TYPE_OF(p) == BF_ACTOR))
+#define	objectp(p)	(((p) != TRUE) && (TYPE_OF(p) == BF_OBJECT))
+#define	atomp(p)	(TYPE_OF(p) == BF_ATOM)
+#define	numberp(p)	(TYPE_OF(p) == BF_NUMBER)
+#define	funcp(p)	(TYPE_OF(p) == BF_FUNC)
 
 #define	map_get(map,key)	map_get_def((map), (key), NULL)
 

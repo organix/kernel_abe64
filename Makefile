@@ -24,8 +24,9 @@ clean:
 
 test: $(PROGS)
 	rm -f *.dbg
-	./abe -t -#d:t:o,abe.dbg
-	./kernel -t -#d:t:o,kernel.dbg
+	./abe -t -#d:t
+#	./abe -t -#d:t:o,abe.dbg
+#	./kernel -t -#d:t:o,kernel.dbg
 
 $(LIB): $(LOBJS)
 	$(AR) rv $(LIB) $(LOBJS)

@@ -47,10 +47,10 @@ struct config {
 #define	as_cons(p)	((CONS*)(p))
 #define	as_cell(p)	((CELL*)(p))
 
-typedef	CONS*		BOOL;
+typedef	int			BOOL;
 #define	FALSE		as_cons(as_word(0))
 #define TRUE		as_cons(as_word(1))
-#define	to_bool(p)	((p)?TRUE:FALSE)
-#define	boolp(p)	to_bool(((p)==FALSE)||((p)==TRUE))
+#define	to_bool(p)	((p) ? TRUE : FALSE)
+#define	boolp(p)	(((p)==FALSE) || ((p)==TRUE))
 
 #endif /* TYPES_H */

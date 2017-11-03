@@ -28,29 +28,31 @@ test_pre()
 	DBUG_ENTER("test_pre");
 	TRACE(printf("--test_pre--\n"));
 
-	DBUG_PRINT("", ("sizeof(int)=%d", sizeof(int)));  /* expected: 4 */
-	DBUG_PRINT("", ("sizeof(CONS*)=%d", sizeof(CONS*)));  /* expected: 8 */
-	DBUG_PRINT("", ("sizeof(BEH)=%d", sizeof(BEH)));  /* expected: 8 */
+	DBUG_PRINT("", ("sizeof(int)=%zd", sizeof(int)));  /* expected: 4 */
+	DBUG_PRINT("", ("sizeof(CONS*)=%zd", sizeof(CONS*)));  /* expected: 8 */
+	DBUG_PRINT("", ("sizeof(BEH)=%zd", sizeof(BEH)));  /* expected: 8 */
 #if 0
 	assert(sizeof(int) == sizeof(CONS*));
 #endif
 	assert(sizeof(BEH) == sizeof(CONS*));
 
-	DBUG_PRINT("", ("NIL=16#%08lx (%p)", NIL, NIL));
+	DBUG_PRINT("", ("NIL=16#%tx (%p)", as_word(NIL), NIL));
+/*
 	assert(nilp(NIL));
 	assert(nilp(NIL) == _nilp(NIL));
+*/
 
-	DBUG_PRINT("", ("sizeof(BOOL)=%d", sizeof(BOOL)));
+	DBUG_PRINT("", ("sizeof(BOOL)=%zd", sizeof(BOOL)));
 	assert(sizeof(BOOL) == sizeof(CONS*));
-	DBUG_PRINT("", ("TRUE=16#%08lx (%p)", TRUE, TRUE));
-	DBUG_PRINT("", ("FALSE=16#%08lx (%p)", FALSE, FALSE));
+	DBUG_PRINT("", ("TRUE=16#%tx (%p)", as_word(TRUE), TRUE));
+	DBUG_PRINT("", ("FALSE=16#%tx (%p)", as_word(FALSE), FALSE));
 	assert(TRUE);
 	assert(!FALSE);
 	assert(TRUE == ((BOOL)(0 == 0)));
 	assert(FALSE == ((BOOL)(0 != 0)));
 
 	DBUG_PRINT("", ("Type tag in LSB[1:0]"));
-	DBUG_PRINT("", ("_Program[]=16#%08lx (%p)", _Program, _Program));
+	DBUG_PRINT("", ("_Program[]=16#%tx (%p)", as_word(_Program), _Program));
 	assert(_Program == MK_PTR(MK_REF(_Program)));
 
 /* FIXME: enable this test when stack allocation is allowed
@@ -58,7 +60,7 @@ test_pre()
 	assert(tmp_buf == MK_PTR(MK_REF(tmp_buf)));
 */
 
-	DBUG_PRINT("", ("test_pre()=16#%08lx (%p)", test_pre, test_pre));
+	DBUG_PRINT("", ("test_pre()=16#%tx (%p)", test_pre, test_pre));
 	assert(test_pre == MK_BEH(MK_FUNC(test_pre)));
 
 	DBUG_RETURN;
