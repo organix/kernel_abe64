@@ -8,5 +8,4 @@ RUN apk add \
 
 COPY / /
 
-RUN make
-RUN ./abe -t
+RUN make clean test

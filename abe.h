@@ -22,7 +22,7 @@
 #include "actor.h"
 
 #define	TRACE(x)	x		/* enable/disable trace statements */
-#define	DEBUG(x)			/* enable/disable debug statements */
+#define	DEBUG(x)	x		/* enable/disable debug statements */
 
 #define	NEW(T)		((T *)calloc(sizeof(T), 1))
 #define	NEWxN(T,N)	((T *)calloc(sizeof(T), (N)))

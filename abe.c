@@ -26,6 +26,7 @@ test_pre()
 /*	char tmp_buf[256]; */
 
 	DBUG_ENTER("test_pre");
+	TRACE(printf("--test_pre--\n"));
 
 	DBUG_PRINT("", ("sizeof(int)=%d", sizeof(int)));  /* expected: 4 */
 	DBUG_PRINT("", ("sizeof(CONS*)=%d", sizeof(CONS*)));  /* expected: 8 */

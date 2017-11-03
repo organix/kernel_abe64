@@ -129,6 +129,7 @@ test_atom()
 
 	DBUG_ENTER("test_atom");
 	TRACE(printf("--test_atom--\n"));
+
 	p = ATOM(NULL);
 	q = ATOM("");
 	assert(nilp(p));
