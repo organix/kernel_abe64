@@ -22,7 +22,7 @@ _nilp(CONS* p)
 BOOL
 _actorp(CONS* p)
 {
-	return (BOOL)(consp(p) && !nilp(p) && funcp((p)->first));
+	return as_bool(consp(p) && !nilp(p) && funcp((p)->first));
 }
 #endif
 
@@ -133,7 +133,7 @@ equal(CONS* x, CONS* y)
 		return FALSE;
 	}
 	if (consp(x) && consp(y)) {
-		return (BOOL)(equal(car(x), car(y)) && equal(cdr(x), cdr(y)));
+		return to_bool(equal(car(x), car(y)) && equal(cdr(x), cdr(y)));
 	}
 	return FALSE;
 }

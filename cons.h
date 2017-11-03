@@ -12,7 +12,7 @@
 extern CELL		nil__cons;
 
 #define	NIL		as_cons(&nil__cons)
-#define	nilp(p)	((BOOL)((p)==NIL))
+#define	nilp(p)	to_bool((p)==NIL))
 #if 0
 #define	car(p)	((p)->first)
 #define	cdr(p)	((p)->rest)
@@ -21,35 +21,32 @@ extern CELL		nil__cons;
 #define	cdr(p)	_cdr(p)
 #endif
 
-#define	BM_TYPE		((WORD)(0x00000003))
-#define	BF_CONS		((WORD)(0x00000000))
-#define	BF_FUNC		((WORD)(0x00000003))
-#define	BF_ATOM		((WORD)(0x00000002))
-#define	BF_NUMBER	((WORD)(0x00000003))
-#define	BF_ACTOR	((WORD)(0x00000001))
-#define	BF_OBJECT	((WORD)(0x00000001))
+#define	BM_TYPE		as_word(3)	/* 2#0000...0011 */
+#define	BF_CONS		as_word(0)	/* 2#0000...0000 */
+#define	BF_ACTOR	as_word(1)	/* 2#0000...0001 */
+#define	BF_OBJECT	as_word(1)	/* 2#0000...0001 */
+#define	BF_ATOM		as_word(2)	/* 2#0000...0010 */
+#define	BF_NUMBER	as_word(3)	/* 2#0000...0011 */
+#define	BF_FUNC		as_word(3)	/* 2#0000...0011 */
+#define	TYPE_OF(p)	(as_word(p) & BM_TYPE)
 
-#define	MK_CONS(p)	((CONS*)((((WORD)(p)) & ~BM_TYPE) | BF_CONS))
-#define	MK_ATOM(p)	((CONS*)((((WORD)(p)) & ~BM_TYPE) | BF_ATOM))
-#define	MK_NUMBER(p) ((CONS*)((((WORD)(p))<<2) | BF_NUMBER))
-#define	MK_FUNC(p)	((CONS*)((((WORD)(p))<<2) | BF_FUNC))
+#define	MK_CONS(p)	as_cons((as_word(p) & ~BM_TYPE) | BF_CONS)
+#define	MK_ACTOR(p)	as_cons((as_word(p) & ~BM_TYPE) | BF_ACTOR)
+#define	MK_OBJECT(p) as_cons((as_word(p) & ~BM_TYPE) | BF_OBJECT)
+#define	MK_ATOM(p)	as_cons((as_word(p) & ~BM_TYPE) | BF_ATOM)
+#define	MK_NUMBER(p) as_cons((as_word(p) << 2) | BF_NUMBER)
+#define	MK_FUNC(p)	as_cons((as_word(p) << 2) | BF_FUNC)
 #define MK_REF(p)	MK_FUNC(p)
-#define	MK_ACTOR(p)	((CONS*)((((WORD)(p)) & ~BM_TYPE) | BF_ACTOR))
-#define	MK_OBJECT(p) ((CONS*)((((WORD)(p)) & ~BM_TYPE) | BF_OBJECT))
 
-#define	MK_INT(p)	((int)(((WORD)(p))>>2))
-#define	MK_PTR(p)	((void*)(((WORD)(p))>>2))
+#define	MK_INT(p)	((int)(as_word(p)>>2))
+#define	MK_PTR(p)	((void*)(as_word(p)>>2))
 
-#define	consp(p)	((BOOL)(((p)!=FALSE)&&((((WORD)(p)) & BM_TYPE) == BF_CONS)))
-#define	atomp(p)	((BOOL)((((WORD)(p)) & BM_TYPE) == BF_ATOM))
-#define	funcp(p)	((BOOL)(((p)!=TRUE)&&((((WORD)(p)) & BM_TYPE) == BF_FUNC)))
-#define	numberp(p)	((BOOL)((((WORD)(p)) & BM_TYPE) == BF_NUMBER))
-#if 0
-#define	actorp(p)	(BOOL)(consp(p) && !nilp(p) && funcp((p)->first))
-#else
-#define	actorp(p)	((BOOL)((((WORD)(p)) & BM_TYPE) == BF_ACTOR))
-#endif
-#define	objectp(p)	((BOOL)((((WORD)(p)) & BM_TYPE) == BF_OBJECT))
+#define	consp(p)	to_bool(((p) != FALSE) && (TYPE_OF(p) == BF_CONS))
+#define	actorp(p)	to_bool(((p) != TRUE) && (TYPE_OF(p) == BF_ACTOR))
+#define	objectp(p)	to_bool(((p) != TRUE) && (TYPE_OF(p) == BF_OBJECT))
+#define	atomp(p)	to_bool(TYPE_OF(p) == BF_ATOM)
+#define	numberp(p)	to_bool(TYPE_OF(p) == BF_NUMBER)
+#define	funcp(p)	to_bool(TYPE_OF(p) == BF_FUNC)
 
 #define	map_get(map,key)	map_get_def((map), (key), NULL)
 

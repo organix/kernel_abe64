@@ -43,13 +43,14 @@ struct config {
 	int		t_count;	/* number of delayed messages in timer queue */
 };
 
-#define	as_word(p)		((WORD)(p))
-#define	as_cons(p)		((CONS*)(p))
-#define	as_cell(p)		((CELL*)(p))
+#define	as_word(p)	((WORD)(p))
+#define	as_cons(p)	((CONS*)(p))
+#define	as_cell(p)	((CELL*)(p))
 
-typedef	CONS*	BOOL;
-#define	FALSE 	as_cons(as_word(0))
-#define TRUE	as_cons(as_word(1))
-#define	boolp(p) (((p)==FALSE)||((p)==TRUE))
+typedef	CONS*		BOOL;
+#define	FALSE		as_cons(as_word(0))
+#define TRUE		as_cons(as_word(1))
+#define	to_bool(p)	((p)?TRUE:FALSE)
+#define	boolp(p)	to_bool(((p)==FALSE)||((p)==TRUE))
 
 #endif /* TYPES_H */
