@@ -11,8 +11,6 @@
 #include "dbug.h"
 DBUG_UNIT("gc");
 
-#define	GC_PHASE_INIT	as_word(-1)    /* 2#1111...1111 */
-
 static WORD	gc_phase__mark = GC_PHASE_INIT;	/* current GC phase marker */
 static WORD	gc_phase__prev = GC_PHASE_INIT;	/* previous GC phase marker */
 
@@ -25,7 +23,7 @@ CELL	gc_perm__cell = { as_cons(as_word(0)), NIL, GC_PHASE_Z, as_word(0) };
 static void
 gc_initialize()
 {
-	if (gc_phase__mark != -1U) {
+	if (gc_phase__mark != GC_PHASE_INIT) {
 		return;		/* already initialized */
 	}
 	DBUG_PRINT("", ("gc_initialize"));
@@ -332,6 +330,12 @@ gc_actor_collection(CONFIG* cfg, CONS* root)
 	DBUG_RETURN;
 }
 
+#if 0
+#define	GC_CELLS_ALLOCATED	((1 << 8) / sizeof(CELL))		/* 256b allocation */
+#else
+#define	GC_CELLS_ALLOCATED	((1 << 12) / sizeof(CELL))		/* 4Kb allocation */
+#endif
+
 static void
 gc_allocate_cells(CELL* list_head)
 /* allocate a new block of free cells */
@@ -343,21 +347,21 @@ gc_allocate_cells(CELL* list_head)
 	DBUG_ENTER("gc_alloc_cells");
 	gc_initialize();
 	tag = ((list_head == GC_FREE_LIST) ? "free" : "permanent");
-#if 1
-	n = ((1 << 12) / sizeof(CELL));		/* 4Kb allocation */
-#else
-	n = ((1 << 8) / sizeof(CELL));		/* 256b allocation */
-#endif
+	n = GC_CELLS_ALLOCATED;		/* 4Kb allocation */
+#if 0
 	p = NEWxN(CELL, n + 1);
-	p = as_cell((as_word(p) + (sizeof(CELL) >> 1)) & ~(sizeof(CELL) - 1));
-	DBUG_PRINT("gc", ("%u %s cells allocated starting at %p", n, tag, p));
+	p = as_cell((as_word(p) + (sizeof(CELL) >> 1)) & ~(sizeof(CELL) - 1)); /* align */
+#else
+	p = NEWxN(CELL, n);
+#endif
+	DBUG_PRINT("gc", ("%lu %s cells allocated starting at %p", n, tag, p));
 	while (n > 0) {
 		--n;
 		GC_SET_MARK(p, GC_PHASE_Z);
 		gc_put(list_head, p);
 		++p;
 	}
-	DBUG_PRINT("gc", ("%u cells available in %s list", GC_SIZE(list_head), tag));
+	DBUG_PRINT("gc", ("%lu cells available in %s list", GC_SIZE(list_head), tag));
 	DBUG_RETURN;
 }
 
@@ -449,11 +453,7 @@ gc_set_rest(CONS* cell, CONS* rest)
 	GC_SET_REST(gc_check_access(cell), rest);
 }
 
-#if 1
-#define	N	256		/* number of free cells in an allocation block */
-#else
-#define	N	16		/* number of free cells in an allocation block */
-#endif
+#define	N	GC_CELLS_ALLOCATED
 
 void
 test_gc()
@@ -470,10 +470,10 @@ test_gc()
 	TRACE(printf("--test_gc--\n"));
 	assert(sizeof(WORD) == sizeof(CONS*));
 	assert(sizeof(WORD) == sizeof(CELL*));
-	DBUG_PRINT("", ("sizeof(CELL) = %u", sizeof(CELL)));
-	DBUG_PRINT("", ("gc_phase = 0x%x", gc_phase__mark));
+	DBUG_PRINT("", ("sizeof(CELL) = %lu", sizeof(CELL)));
+	DBUG_PRINT("", ("gc_phase = 0x%lx", gc_phase__mark));
 	gc_initialize();
-	DBUG_PRINT("", ("gc_phase = 0x%x", gc_phase__mark));
+	DBUG_PRINT("", ("gc_phase = 0x%lx", gc_phase__mark));
 
 	gc_sanity_check(GC_AGED_LIST);
 	gc_sanity_check(GC_SCAN_LIST);
@@ -482,6 +482,7 @@ test_gc()
 	gc_sanity_check(GC_PERM_LIST);
 	
 	gc_allocate_cells(GC_FREE_LIST);
+	DBUG_PRINT("", ("GC_SIZE(GC_FREE_LIST) = %lu", GC_SIZE(GC_FREE_LIST)));
 	gc_sanity_check(GC_FREE_LIST);
 	assert(GC_SIZE(GC_FREE_LIST) == N);
 	

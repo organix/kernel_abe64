@@ -8,6 +8,7 @@
 
 #include "types.h"
 
+#define GC_PHASE_INIT	as_word(-1)		/* 2#1111...1111 */
 #define	GC_PHASE_Z		as_word(0)		/* 2#0000...0000 */
 #define	GC_PHASE_X		as_word(1)		/* 2#0000...0001 */
 #define	GC_PHASE_0		as_word(2)		/* 2#0000...0010 */
