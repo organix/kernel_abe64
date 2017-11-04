@@ -38,3 +38,89 @@ EVENT ---> | o | o-------> message
              v
           behavior
 ```
+
+### Garbage Collection
+
+A statically-allocated `CELL` represents the `NIL` value. It is not linked into the GC lists.
+
+```
+       NIL
+        |   +------------------+
+first:  +-->|       NIL        |
+            +------------------+
+rest:       |       NIL        |
+            +--------------+---+
+_prev:      |        0     | Z |
+            +--------------+---+
+_next:      |        0         |
+            +------------------+
+````
+
+There are 5 double-linked lists and 2 phase variables used by the garbage collector.
+
+````
+PREV_PHASE = 0
+MARK_PHASE = 1
+
+      AGED
+        |   +------------------+
+first:  +-->|        0         |
+            +------------------+
+rest:       |       NIL        |
+            +--------------+---+
+_prev:      |              | Z |
+            +--------------+---+
+_next:      |                  |
+            +------------------+
+
+      SCAN
+        |   +------------------+
+first:  +-->|        0         |
+            +------------------+
+rest:       |       NIL        |
+            +--------------+---+
+_prev:      |              | Z |
+            +--------------+---+
+_next:      |                  |
+            +------------------+
+
+      FRESH
+        |   +------------------+
+first:  +-->|        0         |
+            +------------------+
+rest:       |       NIL        |
+            +--------------+---+
+_prev:      |              | Z |
+            +--------------+---+
+_next:      |                  |
+            +------------------+
+
+      FREE
+        |   +------------------+
+first:  +-->|        0         |
+            +------------------+
+rest:       |       NIL        |
+            +--------------+---+
+_prev:      |              | Z |
+            +--------------+---+
+_next:      |                  |
+            +------------------+
+
+      PERM
+        |   +------------------+
+first:  +-->|        0         |
+            +------------------+
+rest:       |       NIL        |
+            +--------------+---+
+_prev:      |              | Z |
+            +--------------+---+
+_next:      |                  |
+            +------------------+
+```
+
+There are 4 garbage-collection phase-markers:
+
+ * **Z** -- Permanently allocated
+ * **X** -- Marked in-use during heap-walk
+ * **0** -- Even-phase allocation
+ * **1** -- Odd-phase allocation
