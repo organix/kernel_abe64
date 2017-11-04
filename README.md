@@ -56,7 +56,12 @@ _next:      |        0         |
             +------------------+
 ````
 
-There are 5 double-linked lists and 2 phase variables used by the garbage collector. Each of the lists are initially empty.
+There are 5 double-linked lists and 2 phase variables used by the garbage collector. Each of the lists are initially empty. There are 4 garbage-collection phase-marker values (stored in `_prev`):
+
+ * **Z** -- Permanently allocated
+ * **X** -- Marked in-use during heap-walk
+ * **0** -- Even-phase allocation
+ * **1** -- Odd-phase allocation
 
 ````
 PREV_PHASE = 0
@@ -117,10 +122,3 @@ _prev:  +------------o     | Z |<--+
 _next:  +-->|        o-------------+
             +------------------+
 ````
-
-There are 4 garbage-collection phase-markers:
-
- * **Z** -- Permanently allocated
- * **X** -- Marked in-use during heap-walk
- * **0** -- Even-phase allocation
- * **1** -- Odd-phase allocation

@@ -480,7 +480,7 @@ dbug_hexdump(void *p, int n)
 	int c;
 
 	while (n > 0) {
-		fprintf(dbug_cfg->output, "%p  ", bp);
+		fprintf(dbug_cfg->output, "%012lx ", (unsigned long)bp);
 		for (i = 0; i < 16; ++i) {
 			if (i < n) {
 				c = bp[i];
@@ -496,7 +496,7 @@ dbug_hexdump(void *p, int n)
 			}
 		}
 		asc[16] = '\0';
-		fprintf(dbug_cfg->output, "  |%16.16s|\n", asc);
+		fprintf(dbug_cfg->output, " |%16.16s|\n", asc);
 		bp += 16;
 		n -= 16;
 	}
