@@ -29,21 +29,28 @@ gc_initialize()
 	DBUG_PRINT("", ("gc_initialize"));
 	gc_phase__prev = GC_PHASE_0;
 	gc_phase__mark = GC_PHASE_1;
+
 	DBUG_PRINT("", ("AGED = %p", GC_AGED_LIST));
 	GC_SET_NEXT(GC_AGED_LIST, GC_AGED_LIST);
 	GC_SET_PREV(GC_AGED_LIST, GC_AGED_LIST);
+
 	DBUG_PRINT("", ("SCAN = %p", GC_SCAN_LIST));
 	GC_SET_NEXT(GC_SCAN_LIST, GC_SCAN_LIST);
 	GC_SET_PREV(GC_SCAN_LIST, GC_SCAN_LIST);
+
 	DBUG_PRINT("", ("FRESH = %p", GC_FRESH_LIST));
 	GC_SET_NEXT(GC_FRESH_LIST, GC_FRESH_LIST);
 	GC_SET_PREV(GC_FRESH_LIST, GC_FRESH_LIST);
+
 	DBUG_PRINT("", ("FREE = %p", GC_FREE_LIST));
 	GC_SET_NEXT(GC_FREE_LIST, GC_FREE_LIST);
 	GC_SET_PREV(GC_FREE_LIST, GC_FREE_LIST);
+
 	DBUG_PRINT("", ("PERM = %p", GC_PERM_LIST));
 	GC_SET_NEXT(GC_PERM_LIST, GC_PERM_LIST);
 	GC_SET_PREV(GC_PERM_LIST, GC_PERM_LIST);
+
+	DBUG_HEXDUMP(GC_AGED_LIST, 5 * sizeof(CELL)); /**/
 }
 
 void
@@ -159,17 +166,17 @@ gc_sanity_check(CELL* list)
 	CELL* q = NULL;
 
 	DBUG_ENTER("gc_sanity_check");
-	DBUG_PRINT("", ("gc_phase = 0x%lx", gc_phase__mark));
+	XDBUG_PRINT("", ("gc_phase = 0x%lx", gc_phase__mark));
 	assert(((gc_phase__prev == GC_PHASE_0) && (gc_phase__mark == GC_PHASE_1))
 	    || ((gc_phase__prev == GC_PHASE_1) && (gc_phase__mark == GC_PHASE_0)));
 	DBUG_PRINT("", ("list = %p", list));
 	for (;;) {
-		DBUG_HEXDUMP(p, sizeof(CELL)); /**/
+/*		DBUG_HEXDUMP(p, sizeof(CELL)); */
 		assert(n >= 0);				/* prevent possible endless loop */
 		assert(p != NULL);
 		assert((as_word(p) & (sizeof(WORD) - 1)) == 0);	/* alignment */
 		q = GC_NEXT(p);
-		DBUG_PRINT("", ("q = %p", q));
+		XDBUG_PRINT("", ("q = %p", q));
 		assert(q != NULL);
 		assert((as_word(q) & (sizeof(WORD) - 1)) == 0);	/* alignment */
 		assert(GC_PREV(q) == p);

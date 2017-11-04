@@ -13,15 +13,15 @@
 #define	GC_PHASE_X		as_word(1)		/* 2#0000...0001 */
 #define	GC_PHASE_0		as_word(2)		/* 2#0000...0010 */
 #define	GC_PHASE_1		as_word(3)		/* 2#0000...0011 */
-#define	GC_PHASE_MASK	(~as_word(3))	/* 2#1111...1100 */
+#define	GC_PHASE_MASK	as_word(3)		/* 2#0000...0011 */
 
 #define	as_indx(p)		(as_word(p) & ~GC_PHASE_MASK)
 #define	as_addr(p)		as_cell(as_indx(p))
 
 #define	GC_SIZE(p)		as_word((p)->first)
 #define	GC_SET_SIZE(p,n) ((p)->first = as_cons(n))
-#define	GC_MARK(p)		((p)->_prev & ~GC_PHASE_MASK)
-#define	GC_SET_MARK(p,m) ((p)->_prev = (((p)->_prev & GC_PHASE_MASK) | (m)))
+#define	GC_MARK(p)		((p)->_prev & GC_PHASE_MASK)
+#define	GC_SET_MARK(p,m) ((p)->_prev = (((p)->_prev & ~GC_PHASE_MASK) | (m)))
 
 #define	GC_FIRST(p)		((p)->first)
 #define	GC_SET_FIRST(p,q) ((p)->first = (q))
