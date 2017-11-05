@@ -1,11 +1,11 @@
 /*
  * kernel.c -- An actor-based implementation of John Shutt's "Kernel" language
  *
- * Copyright 2012 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2012-03-25";
-static char	_Copyright[] = "Copyright 2012 Dale Schumacher";
+static char	_Version[] = "2017-11-05";
+static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
 #include "kernel.h"

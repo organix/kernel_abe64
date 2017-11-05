@@ -4,7 +4,7 @@
  * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "ABE";
-static char	_Version[] = "2017-11-02";
+static char	_Version[] = "2017-11-05";
 static char	_Copyright[] = "Copyright 2008-2017 Dale Schumacher";
 
 #include <getopt.h>

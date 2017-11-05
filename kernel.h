@@ -1,7 +1,7 @@
 /*
  * kernel.h -- An actor-based implementation of John Shutt's "Kernel" language
  *
- * Copyright 2012 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #ifndef KERNEL_H
 #define KERNEL_H

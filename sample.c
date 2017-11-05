@@ -1,7 +1,7 @@
 /*
  *  sample.c -- Sample hand-coded Actors
  *
- * Copyright 2008 Dale Schumacher.  ALL RIGHTS RESERVED.
+ * Copyright 2008-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 #include "sample.h"
 #include "abe.h"
