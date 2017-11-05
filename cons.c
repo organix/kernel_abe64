@@ -348,16 +348,17 @@ test_cons()
 
 	DBUG_ENTER("test_cons");
 	TRACE(printf("--test_cons--\n"));
-	assert(nilp(NIL));
-	assert(consp(NIL));
-	assert(!atomp(NIL));
-	assert(!funcp(NIL));
-	assert(!numberp(NIL));
+	p = NIL;
+	assert(nilp(p));
+	assert(consp(p));
+	assert(!atomp(p));
+	assert(!funcp(p));
+	assert(!numberp(p));
 	
-	assert(nilp((NIL)->first));
-	assert((NIL)->first == NIL);
-	assert(nilp((NIL)->rest));
-	assert((NIL)->rest == NIL);
+	assert(nilp((p)->first));
+	assert((p)->first == NIL);
+	assert(nilp((p)->rest));
+	assert((p)->rest == NIL);
 	
 	p = cons(NIL, NIL);
 	DBUG_PRINT("", ("p:cons(NIL,NIL)=%p", p));

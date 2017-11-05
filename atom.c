@@ -176,50 +176,50 @@ test_number()
 
 	j = 0;
 	p = NUMBER(j);
-	DBUG_PRINT("", ("NUMBER(%d)=16#%08lx", j, (ulint)p));
+	DBUG_PRINT("", ("NUMBER(%d)=16#%lx", j, as_word(p)));
 	assert(numberp(p));
 	i = MK_INT(p);
 	assert(0 == i);
 	assert(!nilp(p));
 	assert(!consp(p));
 	assert(!atomp(p));
-	assert(funcp(p));
+	assert(!funcp(p));
 	assert(!boolp(p));
 
 	j = 1;
 	p = NUMBER(j);
-	DBUG_PRINT("", ("NUMBER(%d)=16#%08lx", j, (ulint)p));
+	DBUG_PRINT("", ("NUMBER(%d)=16#%lx", j, as_word(p)));
 	assert(numberp(p));
 	i = MK_INT(p);
 	assert(i == j);
 	assert(!nilp(p));
 	assert(!consp(p));
 	assert(!atomp(p));
-	assert(funcp(p));
+	assert(!funcp(p));
 	assert(!boolp(p));
 
 	j = -1;
 	p = NUMBER(j);
-	DBUG_PRINT("", ("NUMBER(%d)=16#%08lx", j, (ulint)p));
+	DBUG_PRINT("", ("NUMBER(%d)=16#%lx", j, as_word(p)));
 	assert(numberp(p));
 	i = MK_INT(p);
 	assert(i == j);
 	assert(!nilp(p));
 	assert(!consp(p));
 	assert(!atomp(p));
-	assert(funcp(p));
+	assert(!funcp(p));
 	assert(!boolp(p));
 
 	j = 0x07FFFFFF;
 	p = NUMBER(j);
-	DBUG_PRINT("", ("NUMBER(%d)=16#%08lx", j, (ulint)p));
+	DBUG_PRINT("", ("NUMBER(%d)=16#%lx", j, as_word(p)));
 	assert(numberp(p));
 	i = MK_INT(p);
 	assert(i == j);
 
 	j = -j;
 	p = NUMBER(j);
-	DBUG_PRINT("", ("NUMBER(%d)=16#%08lx", j, (ulint)p));
+	DBUG_PRINT("", ("NUMBER(%d)=16#%lx", j, as_word(p)));
 	assert(numberp(p));
 	i = MK_INT(p);
 	assert(i == j);

@@ -35,11 +35,9 @@ test_pre()
 	assert(sizeof(WORD) == sizeof(CONS*));
 	assert(sizeof(BEH) == sizeof(CONS*));
 
-	DBUG_PRINT("", ("NIL=16#%lx (%p)", as_word(NIL), NIL));
-/*
+	DBUG_PRINT("", ("NIL=16#%lx (%p)", as_word(NIL), as_ptr(NIL)));
 	assert(nilp(NIL));
 	assert(nilp(NIL) == _nilp(NIL));
-*/
 
 	DBUG_PRINT("", ("sizeof(BOOL)=%ld", (ulint)sizeof(BOOL))); /* expected: 4 */
 	assert(sizeof(BOOL) == sizeof(int));
@@ -59,7 +57,7 @@ test_pre()
 	assert(tmp_buf == MK_PTR(MK_REF(tmp_buf)));
 */
 
-	DBUG_PRINT("", ("test_pre()=16#%lx (%p)", (ulint)test_pre, test_pre));
+	DBUG_PRINT("", ("test_pre()=16#%lx (%p)", as_word(test_pre), test_pre));
 	assert(test_pre == MK_BEH(MK_FUNC(test_pre)));
 
 	DBUG_RETURN;

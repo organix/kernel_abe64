@@ -43,6 +43,8 @@ struct config {
 	int		t_count;	/* number of delayed messages in timer queue */
 };
 
+#define	as_int(p)	((int)(p))
+#define	as_ptr(p)	((void*)(p))
 #define	as_word(p)	((WORD)(p))
 #define	as_cons(p)	((CONS*)(p))
 #define	as_cell(p)	((CELL*)(p))

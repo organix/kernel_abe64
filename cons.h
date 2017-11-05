@@ -26,16 +26,20 @@
 #define	MK_FUNC(p)	as_cons((as_word(p) << 2) | BF_FUNC)
 #define MK_REF(p)	MK_FUNC(p)
 
-#define	MK_INT(p)	((int)(as_word(p)>>2))
-#define	MK_PTR(p)	((void*)(as_word(p)>>2))
-#define	MK_BOOL(p)	((int)as_word(p))
+#define	MK_INT(p)	as_int(as_word(p)>>2)
+#define	MK_PTR(p)	as_ptr(as_word(p)>>2)
+#define	MK_BOOL(p)	as_int(as_word(p))
 
 #define	consp(p)	(((p) != BOOLEAN(FALSE)) && (TYPE_OF(p) == BF_CONS))
 #define	actorp(p)	(((p) != BOOLEAN(TRUE)) && (TYPE_OF(p) == BF_ACTOR))
 #define	objectp(p)	(((p) != BOOLEAN(TRUE)) && (TYPE_OF(p) == BF_OBJECT))
 #define	atomp(p)	(TYPE_OF(p) == BF_ATOM)
 #define	numberp(p)	(TYPE_OF(p) == BF_NUMBER)
+#if 0
 #define	funcp(p)	(TYPE_OF(p) == BF_FUNC)
+#else
+#define	funcp(p)	(numberp(p) && (as_word(MK_INT(p)) != as_word(MK_PTR(p))))
+#endif
 
 #define	map_get(map,key)	map_get_def((map), (key), NULL)
 

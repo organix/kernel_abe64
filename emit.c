@@ -128,6 +128,8 @@ depth_to_str(int depth, char* buf, CONS* cons)
 			buf[n++] = '"';
 			buf[n] = '\0';
 		}
+	} else if (funcp(cons)) {
+		sprintf(buf, "^%p", MK_PTR(cons));
 	} else if (numberp(cons)) {
 		sprintf(buf, "%d", MK_INT(cons));
 	} else if (depth < 0) {			/* depth limit */
@@ -135,9 +137,9 @@ depth_to_str(int depth, char* buf, CONS* cons)
 	} else if (actorp(cons)) {
 		int n = 0;
 
-		XDBUG_PRINT("", ("actor = @%lx[^%lx, 16#%08lx]", 
-			(ulint)cons, (ulint)_THIS(cons), (ulint)_MINE(cons)));
-		sprintf(buf, "@%lx[^%lx, ", (ulint)cons, (ulint)_THIS(cons));
+		XDBUG_PRINT("", ("actor = @%lx[^%p, 16#%lx]", 
+			as_word(cons), MK_PTR(_THIS(cons)), as_word(_MINE(cons))));
+		sprintf(buf, "@%lx[^%p, ", as_word(cons), MK_PTR(_THIS(cons)));
 		child_to_str((depth - 1), buf, _MINE(cons));
 		n = strlen(buf);
 		if (n < (CONS_BUFSZ - 2)) {
@@ -147,8 +149,8 @@ depth_to_str(int depth, char* buf, CONS* cons)
 	} else if (consp(cons)) {
 		int n = 0;
 
-		XDBUG_PRINT("", ("cons = (16#%08lx, 16#%08lx)", 
-			(ulint)car(cons), (ulint)cdr(cons)));
+		XDBUG_PRINT("", ("cons = (16#%lx, 16#%lx)", 
+			as_word(car(cons)), as_word(cdr(cons))));
 		buf[n++] = '(';
 		buf[n] = '\0';
 		tail_to_str(depth, TAIL_LENGTH, buf, cons);
@@ -158,7 +160,7 @@ depth_to_str(int depth, char* buf, CONS* cons)
 			buf[n] = '\0';
 		}
 	} else {
-		sprintf(buf, "16#%08lx", (ulint)cons);
+		sprintf(buf, "16#%lx", as_word(cons));
 	}
 	XDBUG_PRINT("", ("buf = %s", buf));
 	XDBUG_RETURN;
@@ -196,11 +198,11 @@ test_cons_to_str()
 	ASSERT_CONS_TO_STR(NUMBER(-1), "-1", actual);
 
 	value = MK_FUNC(test_cons_to_str);
-	sprintf(expect, "%p", MK_PTR(value));
+	sprintf(expect, "^%p", MK_PTR(value));
 	ASSERT_CONS_TO_STR(value, expect, actual);
 
 	value = CFG_ACTOR(NULL, sink_beh, NIL);
-	sprintf(expect, "@%lx[^%lx, NIL]", (ulint)value, (ulint)sink_beh);
+	sprintf(expect, "@%lx[^%p, NIL]", as_word(value), as_ptr(as_word(sink_beh)));
 	ASSERT_CONS_TO_STR(value, expect, actual);
 #if 0
 	rplacd(value, value);  /* FIXME: CIRCULAR LINK FORCED FOR TESTING */
@@ -285,7 +287,13 @@ emit_cons(CONS* cons, int indent, void (*emit)(char c, void* ctx), void* ctx)
 			buf[n] = '\0';
 		}
 	} else if (numberp(cons)) {
-		sprintf(buf, "%ld", as_word(cons));
+		int n = MK_INT(cons);
+		void* p = MK_PTR(cons);
+		if (as_word(n) == as_word(p)) {
+			sprintf(buf, "%d", n);
+		} else {
+			sprintf(buf, "^%p", p);
+		}
 	} else if (consp(cons)) {
 		if (emit_depth > EMIT_DEPTH_LIMIT) {
 			sprintf(buf, "[%p;%p]", (void*)car(cons), (void*)cdr(cons));
@@ -396,7 +404,8 @@ test_emit()
 
 	clear_sbuf(sbuf);
 	emit_cons(cons(NUMBER(0), MK_FUNC(test_emit)), 0, sbuf_emit, sbuf);
-	sprintf(tmp, "(0 : %lx)", (ulint)test_emit);
+/*	sprintf(tmp, "(0 : ^%p)", test_emit); */
+	sprintf(tmp, "(0 : ^%p)", as_ptr(as_word(test_emit)));
 	DBUG_PRINT("", ("%s = %s", tmp, sbuf->buf));
 	assert(strcmp(tmp, sbuf->buf) == 0);
 
