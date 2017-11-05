@@ -285,7 +285,7 @@ emit_cons(CONS* cons, int indent, void (*emit)(char c, void* ctx), void* ctx)
 			buf[n] = '\0';
 		}
 	} else if (numberp(cons)) {
-		sprintf(buf, "%d", MK_INT(cons));
+		sprintf(buf, "%ld", as_word(cons));
 	} else if (consp(cons)) {
 		if (emit_depth > EMIT_DEPTH_LIMIT) {
 			sprintf(buf, "[%p;%p]", (void*)car(cons), (void*)cdr(cons));
