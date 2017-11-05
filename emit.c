@@ -202,7 +202,7 @@ test_cons_to_str()
 	ASSERT_CONS_TO_STR(value, expect, actual);
 
 	value = CFG_ACTOR(NULL, sink_beh, NIL);
-	sprintf(expect, "@%lx[^%p, NIL]", as_word(value), as_ptr(as_word(sink_beh)));
+	sprintf(expect, "@%lx[^%p, NIL]", as_word(value), MK_PTR(as_word(sink_beh)));
 	ASSERT_CONS_TO_STR(value, expect, actual);
 #if 0
 	rplacd(value, value);  /* FIXME: CIRCULAR LINK FORCED FOR TESTING */

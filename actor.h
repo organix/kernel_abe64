@@ -18,7 +18,7 @@
 
 typedef void (*BEH)(BEH_SIG);
 
-#define	MK_BEH(p)		((BEH)((ptrdiff_t)MK_PTR(p)))
+#define	MK_BEH(p)		((BEH)as_word(MK_PTR(p)))
 #define	_THIS(a)		_this(a)
 #define	_MINE(a)		_mine(a)
 
