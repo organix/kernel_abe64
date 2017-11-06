@@ -24,7 +24,83 @@ Run the Kernel binary in iteractive mode.
 docker run -v $(pwd):/src --rm -it abe64 ./kernel -i 
 ```
 
-There are a few Kernel source files (with `.knl` extensions) which may be pre-loaded into the environment by naming them on the command line.
+There are a few Kernel source files (with `.knl` extensions) which may be pre-loaded into the environment by naming them on the command line. For example, `library.knl` contains standard library definitions.
+
+```
+docker run -v $(pwd):/src --rm -it abe64 ./kernel -i library.knl
+```
+
+### Kernel Standard Library
+
+The Kernel standard (R<sup>-1</sup>sup>RK) defines the facilities provided by the "kernel standard environment", and the symbol names under which they are bound. The tables below list these facilities by section, in the order they are defined. Facilities marked with `o` are *optional* in the standard.
+
+#### 4. Core types and primitive features
+
+symbol                               | R-1RK  | Humus   | abe64   | library.knl
+-------------------------------------|--------|---------|---------|------------
+boolean?                             | x      | x       | x       | 
+eq?                                  | o      | x       | x       | 
+equal?                               | x      |         |         | x
+symbol?                              | x      | x       | x       | 
+inert?                               | x      | x       | x       | 
+$if                                  | x      | x       | x       | 
+pair?                                | x      | x       | x       | 
+null?                                | x      | x       | x       | 
+cons                                 | x      | x       | x       | 
+set-car!                             | o      |         | x       | 
+set-cdr!                             | o      |         | x       | 
+copy-es-immutable                    | o      |         | x       | 
+environment?                         | x      | x       | x       | 
+ignore?                              | x      | x       | x       | 
+eval                                 | x      | x       | x       | 
+make-environment                     | x      | x       | x       | 
+$define!                             | x      | x       | x       | 
+operative?                           | x      | x       | x       | 
+applicative?                         | x      | x       | x       | 
+$vau                                 | x      | x       | x       | 
+wrap                                 | x      | x       | x       | 
+unwrap                               | x      | x       | x       | 
+
+#### 5. Core library features (I)
+
+symbol                               | R-1RK  | Humus   | abe64   | library.knl
+-------------------------------------|--------|---------|---------|------------
+$sequence                            | x      | x       | x       | 
+list                                 | x      | x       | x       | 
+list*                                | x      |         |         | x
+$lambda                              | x      | x       | x       | 
+car                                  | x      |         |         | x
+cdr                                  | x      |         |         | x
+caar, cadr, ... cddddr               | x      |         |         | x
+apply                                | x      |         |         | x
+$cond                                | x      |         |         | 
+get-list-metrics                     | x      |         |         | 
+list-tail                            | x      |         |         | 
+encycle!                             | o      |         |         | 
+map                                  | x      |         |         | 
+$let                                 | x      |         |         | x
+
+#### 6. Core library features (II)
+
+symbol                               | R-1RK  | Humus   | abe64   | library.knl
+-------------------------------------|--------|---------|---------|------------
+get-current-environment              | x      | x       |         | 
+make-kernel-standard-environment     | x      | x       |         | 
+
+#### 15. Ports
+
+symbol                               | R-1RK  | Humus   | abe64   | library.knl
+-------------------------------------|--------|---------|---------|------------
+write                                | x      |         | x       | 
+
+#### Non-standard extensions
+
+symbol                               | R-1RK  | Humus   | abe64   | library.knl
+-------------------------------------|--------|---------|---------|------------
+newline                              |        |         | x       | 
+$concurrent                          |        |         | x       | 
+$parallel                            |        |         |         | x
+Y                                    |        |         |         | x
 
 ## Actor Based Runtime (ABE)
 

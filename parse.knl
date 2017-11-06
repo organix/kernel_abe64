@@ -88,6 +88,7 @@
 ; term   = factor ([*/] factor)*
 ; factor = '(' expr ')' | number
 ; number = [0-9]+ $#
+;
 ($define match-expr
 	($lambda (in)
 		((match-seq

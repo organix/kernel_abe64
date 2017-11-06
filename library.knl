@@ -92,6 +92,12 @@
 		env)))
 
 ;;;
+;;; [FIXME] Replace these with more efficient HUMUS definitions...
+;;;
+
+($define! get-current-environment (wrap ($vau () e e)))
+
+;;;
 ;;; Concurrency
 ;;;
 
