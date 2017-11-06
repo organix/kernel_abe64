@@ -110,10 +110,17 @@
 ($define! $or?
 	($vau x e
 		($cond	((null? x) #f)
-		((null? (cdr x)) (eval (car x) e))  ; tail context
-		((eval (car x) e) #t)
-		(#t (apply (wrap $or?) (cdr x) e)))))
+				((null? (cdr x)) (eval (car x) e))  ; tail context
+				((eval (car x) e) #t)
+				(#t (apply (wrap $or?) (cdr x) e)))))
 ($define! get-current-environment (wrap ($vau () e e)))
+($define! $provide!
+	($vau (symbols . body) env
+		(eval (list $define! symbols
+			(list $let ()
+				(list* $sequence body)
+				(list* list symbols)))
+			env)))
 
 ;;;
 ;;; Concurrency

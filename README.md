@@ -91,6 +91,7 @@ $and?                                | x      |         |         | x
 $or?                                 | x      |         |         | x
 get-current-environment              | x      | x       |         | x
 make-kernel-standard-environment     | x      | x       |         | 
+$provide!                            | x      |         |         | x
 
 #### 15. Ports
 
