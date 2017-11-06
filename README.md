@@ -4,6 +4,28 @@ John Shutt's "Kernel" language implemented on ABE (C) 64-bit runtime. A [previou
 
 [Kernel](https://web.cs.wpi.edu/~jshutt/kernel.html) is a language in the LISP/Scheme family.
 
+### Using Docker
+
+Create a Docker image named `abe64` in which to compile and run Kernel.
+
+```
+docker build -t abe64 .
+```
+
+Compile and test the `abe` and `kernel` programs within the `abe64` Docker image.
+
+```
+docker run -v $(pwd):/src --rm -it abe64
+```
+
+Run the Kernel binary in iteractive mode.
+
+```
+docker run -v $(pwd):/src --rm -it abe64 ./kernel -i 
+```
+
+There are a few Kernel source files (with `.knl` extensions) which may be pre-loaded into the environment by naming them on the command line.
+
 ## Actor Based Runtime (ABE)
 
 ABE is a platform for writing [Actors](https://en.wikipedia.org/wiki/Actor_model) in C.
