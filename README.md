@@ -32,11 +32,11 @@ docker run -v $(pwd):/src --rm -it abe64 ./kernel -i library.knl
 
 ### Kernel Standard Library
 
-The Kernel standard (R<sup>-1</sup>sup>RK) defines the facilities provided by the "kernel standard environment", and the symbol names under which they are bound. The tables below list these facilities by section, in the order they are defined. Facilities marked with `o` are *optional* in the standard.
+The Kernel standard (R<sup>-1</sup>RK) defines the facilities provided by the "kernel standard environment", and the symbol names under which they are bound. The tables below list these facilities by section, in the order they are defined. Facilities marked with `o` are *optional* in the standard.
 
 #### 4. Core types and primitive features
 
-symbol                               | R-1RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
 -------------------------------------|--------|---------|---------|------------
 boolean?                             | x      | x       | x       | 
 eq?                                  | o      | x       | x       | 
@@ -63,7 +63,7 @@ unwrap                               | x      | x       | x       |
 
 #### 5. Core library features (I)
 
-symbol                               | R-1RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
 -------------------------------------|--------|---------|---------|------------
 $sequence                            | x      | x       | x       | 
 list                                 | x      | x       | x       | 
@@ -82,20 +82,20 @@ $let                                 | x      |         |         | x
 
 #### 6. Core library features (II)
 
-symbol                               | R-1RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
 -------------------------------------|--------|---------|---------|------------
 get-current-environment              | x      | x       |         | 
 make-kernel-standard-environment     | x      | x       |         | 
 
 #### 15. Ports
 
-symbol                               | R-1RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
 -------------------------------------|--------|---------|---------|------------
 write                                | x      |         | x       | 
 
 #### Non-standard extensions
 
-symbol                               | R-1RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
 -------------------------------------|--------|---------|---------|------------
 newline                              |        |         | x       | 
 $concurrent                          |        |         | x       | 
