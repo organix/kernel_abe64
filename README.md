@@ -32,11 +32,11 @@ docker run -v $(pwd):/src --rm -it abe64 ./kernel -i library.knl
 
 ### Kernel Standard Library
 
-The Kernel standard (R<sup>-1</sup>RK) defines the facilities provided by the "kernel standard environment", and the symbol names under which they are bound. The tables below list these facilities by section, in the order they are defined. Facilities marked with `o` are *optional* in the standard.
+The Kernel standard (R<sup>-1</sup>RK) defines the facilities provided by the "kernel standard environment", and the symbol names under which they are bound. The tables below list these facilities by section, in the order they are defined. Facilities marked with `o` are *optional* in the standard. The "Humus" column marks facilities defined by the Humus source in ["Semantic Extensibility with *Vau*"](http://www.dalnefre.com/wp/2011/12/semantic-extensibility-with-vau/). The "abe64" column marks facilities defined by the C source in "kernel.c". The "library" column marks facilities defined by the Kernel source in "library.knl".
 
 #### 4. Core types and primitive features
 
-symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 boolean?                             | x      | x       | x       | 
 eq?                                  | o      | x       | x       | 
@@ -63,7 +63,7 @@ unwrap                               | x      | x       | x       |
 
 #### 5. Core library features (I)
 
-symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 $sequence                            | x      | x       | x       | 
 list                                 | x      | x       | x       | 
@@ -73,7 +73,7 @@ car                                  | x      |         |         | x
 cdr                                  | x      |         |         | x
 caar, cadr, ... cddddr               | x      |         |         | x
 apply                                | x      |         |         | x
-$cond                                | x      |         |         | 
+$cond                                | x      |         |         | x
 get-list-metrics                     | x      |         |         | 
 list-tail                            | x      |         |         | 
 encycle!                             | o      |         |         | 
@@ -82,20 +82,25 @@ $let                                 | x      |         |         | x
 
 #### 6. Core library features (II)
 
-symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
-get-current-environment              | x      | x       |         | 
+not?                                 | x      |         |         | x
+and?                                 | x      |         |         | 
+or?                                  | x      |         |         | 
+$and?                                | x      |         |         | x
+$or?                                 | x      |         |         | x
+get-current-environment              | x      | x       |         | x
 make-kernel-standard-environment     | x      | x       |         | 
 
 #### 15. Ports
 
-symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 write                                | x      |         | x       | 
 
 #### Non-standard extensions
 
-symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library.knl
+symbol                               | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 newline                              |        |         | x       | 
 $concurrent                          |        |         | x       | 

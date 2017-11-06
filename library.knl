@@ -2,6 +2,7 @@
 ;;; Kernel standard library
 ;;;
 
+; Section 5
 ($define! car
 	($lambda ((x . #ignore)) x))
 ($define! cdr
@@ -90,11 +91,28 @@
 		(eval (cons (list* $lambda (map car bindings) body)
 			(map cadr bindings))
 		env)))
-
-;;;
-;;; [FIXME] Replace these with more efficient HUMUS definitions...
-;;;
-
+($define! $cond
+	($vau clauses env
+		($if (null? clauses)
+			#inert
+			($let ((((test . body) . clauses) clauses))
+				($if (eval test env)
+					(apply (wrap $sequence) body env)
+					(apply (wrap $cond) clauses env))))))
+; Section 6
+($define! not? ($lambda (x) ($if x #f #t)))
+($define! $and?
+	($vau x e
+		($cond	((null? x) #t)
+				((null? (cdr x)) (eval (car x) e))  ; tail context
+				((eval (car x) e) (apply (wrap $and?) (cdr x) e))
+				(#t #f))))
+($define! $or?
+	($vau x e
+		($cond	((null? x) #f)
+		((null? (cdr x)) (eval (car x) e))  ; tail context
+		((eval (car x) e) #t)
+		(#t (apply (wrap $or?) (cdr x) e)))))
 ($define! get-current-environment (wrap ($vau () e e)))
 
 ;;;
