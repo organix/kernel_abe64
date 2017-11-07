@@ -703,7 +703,9 @@ BEH_DECL(appl_args_beh)
 	CONS* comb;
 	CONS* env;
 	CONS* args = WHAT;
+#if 0
 	CONS* expr;
+#endif
 
 	DBUG_ENTER("appl_args_beh");
 	ENSURE(is_pr(state));
@@ -715,7 +717,7 @@ BEH_DECL(appl_args_beh)
 	expr = ACTOR(pair_type, pr(comb, args));
 	SEND(expr, pr(cust, pr(ATOM("eval"), env)));
 #else
-	SEND(expr, pr(cust, pr(ATOM("comb"), pr(args, env))));
+	SEND(comb, pr(cust, pr(ATOM("comb"), pr(args, env))));
 #endif
 	DBUG_RETURN;
 }
@@ -2625,6 +2627,7 @@ BEH_DECL(map_unwrap_beh)
 
 /* FIXME: for now, just return a one-element list with the operative */
 	SEND(cust, ACTOR(cons_type, pr(comb, a_nil)));  /* cons produces mutable pairs */
+
 /*
 		CONS* req_ = tl(req);
 		CONS* k_pair = ACTOR(pair_map_beh, cust);
@@ -2644,18 +2647,22 @@ static
 BEH_DECL(map_args_beh)
 {
 	CONS* state = MINE;
+#if 0
 	CONS* cust;
 	CONS* env;
+#endif
 	CONS* msg = WHAT;
 	CONS* appl;
 	CONS* lists;
 	CONS* k_unwrap;
 
 	DBUG_ENTER("map_args_beh");
+#if 0
 	ENSURE(is_pr(state));
 	cust = hd(state);
 	ENSURE(actorp(cust));
 	env = tl(state);
+#endif
 	ENSURE(is_pr(msg));
 	appl = hd(msg);
 	ENSURE(actorp(appl));
