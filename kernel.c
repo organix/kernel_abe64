@@ -690,8 +690,9 @@ BEH_DECL(args_oper)
 
 /**
 LET appl_args_beh(cust, comb, env) = \args.[
-	CREATE expr WITH Pair(comb, args)
-	SEND (cust, #eval, env) TO expr
+#	CREATE expr WITH Pair(comb, args)
+#	SEND (cust, #eval, env) TO expr
+	SEND (cust, #comb, args, env) TO comb  # inline Pair combination
 ]
 **/
 static
@@ -710,8 +711,12 @@ BEH_DECL(appl_args_beh)
 	ENSURE(actorp(cust));
 	comb = hd(tl(state));
 	env = tl(tl(state));
+#if 0
 	expr = ACTOR(pair_type, pr(comb, args));
 	SEND(expr, pr(cust, pr(ATOM("eval"), env)));
+#else
+	SEND(expr, pr(cust, pr(ATOM("comb"), pr(args, env))));
+#endif
 	DBUG_RETURN;
 }
 /**
@@ -2562,6 +2567,11 @@ BEH_DECL(concurrent_oper)
 
 /**
 
+(map eq?
+	(list #t #f #t #f 0 (cons 0 1))
+	(list #t #t #f #f 0 (cons 0 1)))
+==> (#t #f #f #t #t #f)
+
            +---+---+     +---+---+             +---+---+
 lists ---> | o | o-----> | o | o---- ... ----> | o | / |
            +-|-+---+     +-|-+---+             +-|-+---+
@@ -3220,6 +3230,23 @@ test_kernel()
 	assert_eval(expr, expect);
 
 	/*
+	 * (list #t #f)
+	 * ==> (#t #f)
+	 */
+#if 0
+	expect = ACTOR(pair_type, pr(
+		a_true,
+		ACTOR(pair_type, pr(
+			a_false,
+			a_nil))));
+	expr = ACTOR(pair_type, pr(
+		get_symbol(ATOM("list")),
+		expect));
+	assert_eval(expr, expect);
+	/* FIXME: can't compare list contents because different actors are never equal */
+#endif
+
+	/*
 	 * (($vau (x) #ignore x) y)
 	 * ==> y
 	 */
@@ -3243,19 +3270,6 @@ test_kernel()
 	expect = get_symbol(ATOM("y"));
 	assert_eval(expr, expect);
 
-	/*
-	 * (list #t #f)
-	 */
-/*	expr = ACTOR(pair_type, pr(
-		get_symbol(ATOM("list")),
-		ACTOR(pair_type, pr(
-			a_true,
-			ACTOR(pair_type, pr(
-				a_false,
-				a_nil))))));
-	expect = a_true;
-	assert_eval(expr, expect);
-*/
 	/*
 	 * ($sequence
 	 *		($define! y #t)
@@ -3354,6 +3368,10 @@ test_kernel()
 	expect = get_const(NUMBER(1));
 	assert_eval(expr, expect);
 
+	/*
+	 * 
+	 */
+	
 /* ...ADD TESTS HERE... */
 
 #if 1
