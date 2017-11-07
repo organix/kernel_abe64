@@ -2561,6 +2561,20 @@ BEH_DECL(concurrent_oper)
 }
 
 /**
+
+           +---+---+     +---+---+             +---+---+
+lists ---> | o | o-----> | o | o---- ... ----> | o | / |
+           +-|-+---+     +-|-+---+             +-|-+---+
+             V             V                     V
+           Pair()        Pair()                Pair()
+
+---> Pair( o , o-)----> Pair( o , o-)-- ... --> Pair( o , a_nil )
+           |                  |                       |
+           V                  V                       V
+         +---+---+          +---+---+               +---+---+
+         |   |   |          |   |   |               |   |   |
+         +---+---+          +---+---+               +---+---+
+
 LET map_unwrap_beh(lists, cust, env) = \comb.[
 	...
 	result := NIL
@@ -2571,6 +2585,14 @@ LET map_unwrap_beh(lists, cust, env) = \comb.[
 	while lists not empty
 	send results to cust
 	...
+	(#map, req') : [
+		CREATE fork WITH fork_beh(k_pair, left, right)
+		SEND (req', req) TO fork
+		CREATE k_pair WITH \(head, tail).[  # pair_map_beh
+			CREATE pair WITH cons_type(head, tail)
+			SEND pair TO cust
+		]
+	]
 ]
 **/
 static
@@ -2593,11 +2615,19 @@ BEH_DECL(map_unwrap_beh)
 
 /* FIXME: for now, just return a one-element list with the operative */
 	SEND(cust, ACTOR(cons_type, pr(comb, a_nil)));  /* cons produces mutable pairs */
+/*
+		CONS* req_ = tl(req);
+		CONS* k_pair = ACTOR(pair_map_beh, cust);
+		CONS* fork = ACTOR(fork_beh, pr(k_pair, pr(left, right)));
+
+		SEND(fork, pr(req_, req));
+*/
 	DBUG_RETURN;
 }
 /**
 LET map_args_beh(cust, env) = \(appl, lists).[
-	SEND (NEW map_unwrap_beh(lists, cust, env), #unwrap) TO appl
+	CREATE k_unwrap WITH map_unwrap_beh(lists, cust, env)
+	SEND (k_unwrap, #unwrap) TO appl
 ]
 **/
 static
@@ -2609,9 +2639,9 @@ BEH_DECL(map_args_beh)
 	CONS* msg = WHAT;
 	CONS* appl;
 	CONS* lists;
+	CONS* k_unwrap;
 
 	DBUG_ENTER("map_args_beh");
-
 	ENSURE(is_pr(state));
 	cust = hd(state);
 	ENSURE(actorp(cust));
@@ -2623,7 +2653,8 @@ BEH_DECL(map_args_beh)
 	ENSURE(is_pr(lists));  /* require at least one list */
 	ENSURE(!nilp(lists));
 
-	SEND(appl, pr(ACTOR(map_unwrap_beh, pr(lists, state)), ATOM("unwrap")));
+	k_unwrap = ACTOR(map_unwrap_beh, pr(lists, state));
+	SEND(appl, pr(k_unwrap, ATOM("unwrap")));
 	DBUG_RETURN;
 }
 
