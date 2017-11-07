@@ -2824,8 +2824,7 @@ init_kernel()
 
 	a_kernel_env = ACTOR(env_type, pr(NIL, ground_map));
 	cfg_add_gc_root(CFG, a_kernel_env);		/* protect from gc */
-	a_ground_env = ACTOR(env_type, pr(a_kernel_env, NIL));
-	cfg_add_gc_root(CFG, a_ground_env);		/* protect from gc */
+	a_ground_env = a_kernel_env;
 	DBUG_RETURN;
 }
 
@@ -3074,6 +3073,9 @@ read_eval_print_loop(FILE* f, BOOL interactive)
 	DBUG_ENTER("read_eval_print_loop");
 	input_file = f;
 	current_source = file_source(input_file);
+	/* each REPL gets a fresh environment stacked on previous definitions */
+	a_ground_env = ACTOR(env_type, pr(a_ground_env, NIL));
+	cfg_add_gc_root(CFG, a_ground_env);		/* protect from gc */
 	for (;;) {
 		if (interactive) {
 			prompt();
