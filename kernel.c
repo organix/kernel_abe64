@@ -2185,7 +2185,7 @@ BEH_DECL(lambda_oper)
 	CONS* cust;
 	CONS* req;
 
-	DBUG_ENTER("list_oper");
+	DBUG_ENTER("lambda_oper");
 	ENSURE(is_pr(msg));
 	cust = hd(msg);
 	ENSURE(actorp(cust));
@@ -2561,6 +2561,73 @@ BEH_DECL(concurrent_oper)
 }
 
 /**
+LET map_unwrap_beh(lists, cust, env) = \comb.[
+	...
+	result := NIL
+	do
+		args := list of the first elements of lists
+		result := (cons (apply comb args) env) result)
+		lists := tails of each lists
+	while lists not empty
+	send results to cust
+	...
+]
+**/
+static
+BEH_DECL(map_unwrap_beh)
+{
+	CONS* state = MINE;
+	CONS* lists;
+	CONS* cust;
+	CONS* env;
+	CONS* comb = WHAT;
+
+	DBUG_ENTER("map_args_beh");
+	ENSURE(is_pr(state));
+	lists = hd(state);
+	ENSURE(is_pr(tl(state)));
+	cust = hd(tl(state));
+	ENSURE(actorp(cust));
+	env = tl(tl(state));
+	ENSURE(actorp(comb));
+
+/* FIXME: for now, just return a one-element list with the operative */
+	SEND(cust, ACTOR(cons_type, pr(comb, NIL)));  /* cons produces mutable pairs */
+	DBUG_RETURN;
+}
+/**
+LET map_args_beh(cust, env) = \(appl, lists).[
+	SEND (NEW map_unwrap_beh(lists, cust, env), #unwrap) TO appl
+]
+**/
+static
+BEH_DECL(map_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* env;
+	CONS* msg = WHAT;
+	CONS* appl;
+	CONS* lists;
+
+	DBUG_ENTER("map_args_beh");
+
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	env = tl(state);
+	ENSURE(is_pr(msg));
+	appl = hd(msg);
+	ENSURE(actorp(appl));
+	lists = tl(msg);
+	ENSURE(is_pr(lists));  /* require at least one list */
+	ENSURE(!nilp(lists));
+
+	SEND(appl, pr(ACTOR(map_unwrap_beh, pr(lists, state)), ATOM("unwrap")));
+	DBUG_RETURN;
+}
+
+/**
 CREATE sink WITH \_.[]
 
 CREATE Inert WITH unit_type()
@@ -2569,6 +2636,7 @@ CREATE False WITH bool_type(FALSE)
 CREATE Nil WITH null_type()
 CREATE Ignore WITH any_type()
 
+ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
 ground_env("make-environment") = NEW appl_type(NEW args_oper(make_env_args_beh))
 ground_env("eval") = NEW appl_type(NEW args_oper(eval_args_beh))
@@ -2626,6 +2694,9 @@ init_kernel()
 	a_ignore = ACTOR(any_type, NIL);
 	cfg_add_gc_root(CFG, a_ignore);		/* protect from gc */
 
+	ground_map = map_put(ground_map, ATOM("map"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(map_args_beh))));
 	ground_map = map_put(ground_map, ATOM("$concurrent"),
 		ACTOR(concurrent_oper, NIL));
 	ground_map = map_put(ground_map, ATOM("make-environment"),
