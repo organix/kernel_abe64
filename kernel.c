@@ -2592,7 +2592,7 @@ BEH_DECL(map_unwrap_beh)
 	ENSURE(actorp(comb));
 
 /* FIXME: for now, just return a one-element list with the operative */
-	SEND(cust, ACTOR(cons_type, pr(comb, NIL)));  /* cons produces mutable pairs */
+	SEND(cust, ACTOR(cons_type, pr(comb, a_nil)));  /* cons produces mutable pairs */
 	DBUG_RETURN;
 }
 /**
