@@ -2594,36 +2594,38 @@ heads ---> Head( o , o-)----------> Head( o , NIL )
                  V                        V
                 (#t #f #t #f 0 (0 1))    (#t #f #t #f 0 (0 1))
 
-LET map_head_beh(list, next) = \cust.[
-	SEND (SELF, #as_pair) TO list
-	BECOME \pair.[
-		CASE pair OF
-		(head, list') : [
-			CASE next OF
-			NIL : [
-				SEND NEW cons_type(head, $Nil) TO cust
-			]
-			_ : [
-				SEND k_next TO next
-				CREATE k_next WITH \tail.[
-					CASE tail OF
-					$Nil : [
-						SEND $Nil TO cust
-					]
-					_ : [
-						SEND NEW cons_type(head, tail) TO cust
-					]
-					END
-				]
-			]
-			END
-			BECOME map_head_beh(list', next)
+LET map_next_beh(cust, head) = \tail.[
+	CASE tail OF
+	$Nil : [
+		SEND $Nil TO cust
+	]
+	_ : [
+		SEND NEW cons_type(head, tail) TO cust
+	]
+	END
+]
+LET map_pair_beh(cust, next) = \pair.[
+	CASE pair OF
+	(head, list') : [
+		CASE next OF
+		NIL : [
+			SEND NEW cons_type(head, $Nil) TO cust
 		]
 		_ : [
-			SEND $Nil TO cust
+			SEND k_next TO next
+			CREATE k_next WITH map_next_beh(cust, head)
 		]
 		END
+		BECOME map_head_beh(list', next)
 	]
+	_ : [
+		SEND $Nil TO cust
+	]
+	END
+]
+LET map_head_beh(list, next) = \cust.[
+	SEND (SELF, #as_pair) TO list
+	BECOME map_pair_beh(cust, next)
 ]
 LET map_unwrap_beh(lists, cust, env) = \comb.[
 	LET mk_heads(lists) = (
@@ -2642,14 +2644,9 @@ LET map_unwrap_beh(lists, cust, env) = \comb.[
 	while lists not empty
 	send results to cust
 	...
-	(#map, req') : [
-		CREATE fork WITH fork_beh(k_pair, left, right)
-		SEND (req', req) TO fork
-		CREATE k_pair WITH \(head, tail).[  # pair_map_beh
-			CREATE pair WITH cons_type(head, tail)
-			SEND pair TO cust
-		]
-	]
+#	CREATE expr WITH Pair(comb, args)
+#	SEND (cust, #eval, env) TO expr
+	SEND (cust, #comb, args, env) TO comb  # inline Pair combination
 ]
 **/
 static
