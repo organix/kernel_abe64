@@ -2596,17 +2596,26 @@ lists ---> | o | o-----> | o | o---- ... ----> | o | / |
          |   |   |          |   |   |               |   |   |
          +---+---+          +---+---+               +---+---+
 
-LET map_head_beh(list, next) = \msg.[
+LET map_head_beh(list, next) = \cust.[
+	SEND (k_pair, #as_pair) TO list
+	CREATE k_pair WITH \(first, list').[
+		SEND k_next TO next
+		CREATE k_next WITH \rest.[
+			CREATE pair WITH cons_type(first, rest)
+			SEND pair TO cust
+		]
+	]
 ]
-LET map_nil_beh(head) = \msg.[
+LET map_nil_beh() = \cust.[
 ]
 LET map_unwrap_beh(lists, cust, env) = \comb.[
 	LET mk_heads(lists) = (
 		CASE lists OF
 		(h, t) : NEW map_head_beh(h, mk_heads(t))
-		_ : NEW map_nil_beh(SELF)
+		_ : NEW map_nil_beh()
 		END
 	)
+	LET heads = $(mk_heads(lists))
 	...
 	result := NIL
 	do
