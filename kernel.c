@@ -2589,30 +2589,47 @@ lists ---> | o | o-----> | o | o---- ... ----> | o | / |
              V             V                     V
            Pair()        Pair()                Pair()
 
----> Pair( o , o-)----> Pair( o , o-)-- ... --> Pair( o , a_nil )
-           |                  |                       |
-           V                  V                       V
-         +---+---+          +---+---+               +---+---+
-         |   |   |          |   |   |               |   |   |
-         +---+---+          +---+---+               +---+---+
+heads ---> Head( o , o-)----------> Head( o , NIL )
+                 |                        |
+                 V                        V
+                (#t #f #t #f 0 (0 1))    (#t #f #t #f 0 (0 1))
 
 LET map_head_beh(list, next) = \cust.[
-	SEND (k_pair, #as_pair) TO list
-	CREATE k_pair WITH \(first, list').[
-		SEND k_next TO next
-		CREATE k_next WITH \rest.[
-			CREATE pair WITH cons_type(first, rest)
-			SEND pair TO cust
+	SEND (SELF, #as_pair) TO list
+	BECOME \pair.[
+		CASE pair OF
+		(head, list') : [
+			CASE next OF
+			NIL : [
+				SEND NEW cons_type(head, $Nil) TO cust
+			]
+			_ : [
+				SEND k_next TO next
+				CREATE k_next WITH \tail.[
+					CASE tail OF
+					$Nil : [
+						SEND $Nil TO cust
+					]
+					_ : [
+						SEND NEW cons_type(head, tail) TO cust
+					]
+					END
+				]
+			]
+			END
+			BECOME map_head_beh(list', next)
 		]
+		_ : [
+			SEND $Nil TO cust
+		]
+		END
 	]
-]
-LET map_nil_beh() = \cust.[
 ]
 LET map_unwrap_beh(lists, cust, env) = \comb.[
 	LET mk_heads(lists) = (
 		CASE lists OF
 		(h, t) : NEW map_head_beh(h, mk_heads(t))
-		_ : NEW map_nil_beh()
+		_ : NIL
 		END
 	)
 	LET heads = $(mk_heads(lists))
@@ -2644,7 +2661,7 @@ BEH_DECL(map_unwrap_beh)
 	CONS* env;
 	CONS* comb = WHAT;
 
-	DBUG_ENTER("map_args_beh");
+	DBUG_ENTER("map_unwrap_beh");
 	ENSURE(is_pr(state));
 	lists = hd(state);
 	ENSURE(is_pr(tl(state)));
