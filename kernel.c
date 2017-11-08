@@ -2574,6 +2574,15 @@ BEH_DECL(concurrent_oper)
 	(list #t #t #f #f 0 (cons 0 1)))
 ==> (#t #f #f #t #t #f)
 
+(list
+	(eq? #t #t)
+	(eq? #f #t)
+	(eq? #t #f)
+	(eq? #f #f)
+	(eq? 0 0)
+	(eq? (cons 0 1) (cons 0 1)))
+==> (#t #f #f #t #t #f)
+
            +---+---+     +---+---+             +---+---+
 lists ---> | o | o-----> | o | o---- ... ----> | o | / |
            +-|-+---+     +-|-+---+             +-|-+---+
@@ -2587,7 +2596,17 @@ lists ---> | o | o-----> | o | o---- ... ----> | o | / |
          |   |   |          |   |   |               |   |   |
          +---+---+          +---+---+               +---+---+
 
+LET map_head_beh(list, next) = \msg.[
+]
+LET map_nil_beh(head) = \msg.[
+]
 LET map_unwrap_beh(lists, cust, env) = \comb.[
+	LET mk_heads(lists) = (
+		CASE lists OF
+		(h, t) : NEW map_head_beh(h, mk_heads(t))
+		_ : NEW map_nil_beh(SELF)
+		END
+	)
 	...
 	result := NIL
 	do
@@ -2626,14 +2645,35 @@ BEH_DECL(map_unwrap_beh)
 	ENSURE(actorp(comb));
 
 /* FIXME: for now, just return a one-element list with the operative */
-	SEND(cust, ACTOR(cons_type, pr(comb, a_nil)));  /* cons produces mutable pairs */
+	SEND(cust, ACTOR(cons_type, pr(comb, a_nil)));  /* cons_type: mutable pair */
 
 /*
+# Humus ....
+	(#map, req') : [
+		CREATE fork WITH fork_beh(k_pair, left, right)
+		SEND (req', req) TO fork
+		CREATE k_pair WITH \(head, tail).[  # pair_map_beh
+			CREATE pair WITH cons_type(head, tail)
+			SEND pair TO cust
+		]
+	]
+# C ...
+	&& (hd(req) == ATOM("map"))) {
 		CONS* req_ = tl(req);
 		CONS* k_pair = ACTOR(pair_map_beh, cust);
 		CONS* fork = ACTOR(fork_beh, pr(k_pair, pr(left, right)));
 
 		SEND(fork, pr(req_, req));
+	} else ...
+# Humus ....
+LET pair_map_beh(cust) = \(head, tail).[
+	CREATE pair WITH cons_type(head, tail)
+	SEND pair TO cust
+]
+# C ...
+	if (is_pr(head_tail)) {
+		SEND(cust, ACTOR(cons_type, head_tail));
+	}
 */
 	DBUG_RETURN;
 }
