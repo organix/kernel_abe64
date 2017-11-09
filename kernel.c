@@ -2594,6 +2594,8 @@ heads ---> Head( o , o-)----------> Head( o , NIL )
                  V                        V
                 (#t #f #t #f 0 (0 1))    (#t #f #t #f 0 (0 1))
 
+**/
+/**
 LET map_next_beh(cust, head) = \tail.[
 	CASE tail OF
 	$Nil : [
@@ -2604,6 +2606,31 @@ LET map_next_beh(cust, head) = \tail.[
 	]
 	END
 ]
+**/
+static
+BEH_DECL(map_next_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* head;
+	CONS* tail = WHAT;
+
+	DBUG_ENTER("map_next_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	head = tl(state);
+	ENSURE(actorp(head));
+	ENSURE(actorp(tail));
+
+	if (tail == a_nil) {
+		SEND(cust, a_nil);
+	} else {
+		SEND(cust, ACTOR(cons_type, pr(head, tail)));
+	}
+	DBUG_RETURN;
+}
+/**
 LET map_pair_beh(cust, next) = \pair.[
 	CASE pair OF
 	(head, list') : [
@@ -2623,10 +2650,34 @@ LET map_pair_beh(cust, next) = \pair.[
 	]
 	END
 ]
+**/
+/**
 LET map_head_beh(list, next) = \cust.[
 	SEND (SELF, #as_pair) TO list
 	BECOME map_pair_beh(cust, next)
 ]
+**/
+static
+BEH_DECL(map_head_beh)
+{
+	CONS* state = MINE;
+	CONS* list;
+	CONS* next;
+	CONS* cust = WHAT;
+
+	DBUG_ENTER("map_head_beh");
+	ENSURE(is_pr(state));
+	list = hd(state);
+	ENSURE(actorp(list));
+	next = tl(state);
+	ENSURE(actorp(next));
+	ENSURE(actorp(cust));
+
+	SEND(list, pr(SELF, ATOM("as_pair")));
+	BECOME(map_pair_beh, pr(cust, next));
+	DBUG_RETURN;
+}
+/**
 LET map_unwrap_beh(lists, cust, env) = \comb.[
 	LET mk_heads(lists) = (
 		CASE lists OF
