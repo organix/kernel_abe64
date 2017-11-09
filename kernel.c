@@ -2708,34 +2708,7 @@ BEH_DECL(map_head_beh)
 	BECOME(map_pair_beh, pr(cust, next));
 	DBUG_RETURN;
 }
-/*
-# Humus ....
-LET pair_map_beh(cust) = \(head, tail).[
-	CREATE pair WITH cons_type(head, tail)
-	SEND pair TO cust
-]
-# C ...
-	if (is_pr(head_tail)) {
-		SEND(cust, ACTOR(cons_type, head_tail));
-	}
-# Humus ....
-	(#map, req') : [
-		CREATE fork WITH fork_beh(k_pair, left, right)
-		SEND (req', req) TO fork
-		CREATE k_pair WITH \(head, tail).[  # pair_map_beh
-			CREATE pair WITH cons_type(head, tail)
-			SEND pair TO cust
-		]
-	]
-# C ...
-	&& (hd(req) == ATOM("map"))) {
-		CONS* req_ = tl(req);
-		CONS* k_pair = ACTOR(pair_map_beh, cust);
-		CONS* fork = ACTOR(fork_beh, pr(k_pair, pr(left, right)));
 
-		SEND(fork, pr(req_, req));
-	} else ...
-*/
 static BEH_DECL(map_comb_beh);  /* forward */
 /**
 LET map_tail_beh(comb, env) = \(cust, heads).[
