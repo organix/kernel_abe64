@@ -2595,6 +2595,7 @@ heads ---> Head( o , o-)----------> Head( o , NIL )
                 (#t #f #t #f 0 (0 1))    (#t #f #t #f 0 (0 1))
 
 **/
+static BEH_DECL(map_head_beh);  /* forward */
 /**
 LET map_next_beh(cust, head) = \tail.[
 	CASE tail OF
@@ -2651,6 +2652,37 @@ LET map_pair_beh(cust, next) = \pair.[
 	END
 ]
 **/
+static
+BEH_DECL(map_pair_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* next;
+	CONS* pair = WHAT;
+
+	DBUG_ENTER("map_pair_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	next = tl(state);
+
+	if (is_pr(pair)) {
+		CONS* head = hd(pair);
+		CONS* list = tl(pair);
+
+		if (nilp(next)) {
+			SEND(cust, ACTOR(cons_type, pr(head, a_nil)));
+		} else {
+			CONS* k_next = ACTOR(map_next_beh, pr(cust, head));
+
+			SEND(next, k_next);
+		}
+		BECOME(map_head_beh, pr(list, next));
+	} else {
+		SEND(cust, a_nil);
+	}
+	DBUG_RETURN;
+}
 /**
 LET map_head_beh(list, next) = \cust.[
 	SEND (SELF, #as_pair) TO list
@@ -2670,7 +2702,6 @@ BEH_DECL(map_head_beh)
 	list = hd(state);
 	ENSURE(actorp(list));
 	next = tl(state);
-	ENSURE(actorp(next));
 	ENSURE(actorp(cust));
 
 	SEND(list, pr(SELF, ATOM("as_pair")));
@@ -2678,26 +2709,58 @@ BEH_DECL(map_head_beh)
 	DBUG_RETURN;
 }
 /**
-LET map_unwrap_beh(lists, cust, env) = \comb.[
-	LET mk_heads(lists) = (
-		CASE lists OF
-		(h, t) : NEW map_head_beh(h, mk_heads(t))
-		_ : NIL
-		END
-	)
-	LET heads = $(mk_heads(lists))
-	...
-	result := NIL
-	do
-		args := list of the first elements of lists
-		result := (cons (apply comb args) env) result)
-		lists := tails of each lists
-	while lists not empty
-	send results to cust
-	...
+LET mk_heads(lists) = (
+	CASE lists OF
+	(h, t) : NEW map_head_beh(h, mk_heads(t))
+	_ : NIL
+	END
+)
+**/
+static CONS*
+mk_heads(CONFIG* cfg, CONS* p)
+{
+	CONS* q = NIL;
+
+	if (is_pr(p)) {
+		q = CFG_ACTOR(cfg, map_head_beh, pr(hd(p), mk_heads(cfg, tl(p))));
+	}
+	return q;
+}
+/**
+LET map_result_beh(cust, comb, env) = \args.[
 #	CREATE expr WITH Pair(comb, args)
 #	SEND (cust, #eval, env) TO expr
 	SEND (cust, #comb, args, env) TO comb  # inline Pair combination
+]
+**/
+static
+BEH_DECL(map_result_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* comb;
+	CONS* env;
+	CONS* args = WHAT;
+
+	DBUG_ENTER("map_result_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	ENSURE(is_pr(tl(state)));
+	comb = hd(tl(state));
+	ENSURE(actorp(comb));
+	env = tl(tl(state));
+	ENSURE(actorp(env));
+	ENSURE(actorp(args));
+
+/* FIXME: for now, just return a singple operative/arg list */
+	SEND(cust, ACTOR(cons_type, pr(comb, args)));  /* cons_type: mutable pair */
+	DBUG_RETURN;
+}
+/**
+LET map_unwrap_beh(lists, cust, env) = \comb.[
+	LET heads = $(mk_heads(lists))
+	SEND NEW map_result_beh(cust, comb, env) TO heads
 ]
 **/
 static
@@ -2708,6 +2771,7 @@ BEH_DECL(map_unwrap_beh)
 	CONS* cust;
 	CONS* env;
 	CONS* comb = WHAT;
+	CONS* heads;
 
 	DBUG_ENTER("map_unwrap_beh");
 	ENSURE(is_pr(state));
@@ -2718,8 +2782,8 @@ BEH_DECL(map_unwrap_beh)
 	env = tl(tl(state));
 	ENSURE(actorp(comb));
 
-/* FIXME: for now, just return a one-element list with the operative */
-	SEND(cust, ACTOR(cons_type, pr(comb, a_nil)));  /* cons_type: mutable pair */
+	heads = mk_heads(CFG, lists);
+	SEND(heads, ACTOR(map_result_beh, pr(cust, pr(comb, env))));
 
 /*
 # Humus ....
