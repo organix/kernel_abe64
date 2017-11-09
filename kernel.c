@@ -1042,7 +1042,7 @@ BEH_DECL(pair_comb_beh)
 	ENSURE(is_pr(tl(state)));
 	right = hd(tl(state));
 	env = tl(tl(state));
-	SEND(cust, pr(cust, pr(ATOM("comb"), pr(right, env))));
+	SEND(comb, pr(cust, pr(ATOM("comb"), pr(right, env))));
 */
 	SEND(comb, pr(cust, pr(ATOM("comb"), tl(state))));
 	DBUG_RETURN;
@@ -2708,69 +2708,16 @@ BEH_DECL(map_head_beh)
 	BECOME(map_pair_beh, pr(cust, next));
 	DBUG_RETURN;
 }
-/**
-LET map_result_beh(comb, heads, cust, env) = \args.[
-	CASE args OF
-	$Nil : [
-		# no more args
-	]
-	_ : [
-		SEND (comb, args) TO cust  # FIXME: report proposed combination
-#		CREATE expr WITH Pair(comb, args)
-#		SEND (cust, #eval, env) TO expr
-		SEND (cust, #comb, args, env) TO comb  # inline Pair combination
-	]
-	END
-]
-**/
-static
-BEH_DECL(map_result_beh)
-{
-	CONS* state = MINE;
-	CONS* comb;
-	CONS* heads;
-	CONS* cust;
-	CONS* env;
-	CONS* args = WHAT;
-
-	DBUG_ENTER("map_result_beh");
-	ENSURE(is_pr(state));
-	comb = hd(state);
-	ENSURE(actorp(comb));
-	ENSURE(is_pr(tl(state)));
-	heads = hd(tl(state));
-	ENSURE(actorp(heads));
-	ENSURE(is_pr(tl(tl(state))));
-	cust = hd(tl(tl(state)));
-	ENSURE(actorp(cust));
-	env = tl(tl(tl(state)));
-	ENSURE(actorp(env));
-	ENSURE(actorp(args));
-
-/* FIXME: for now, just return a singple operative/arg list */
-	SEND(cust, ACTOR(cons_type, pr(comb, args)));  /* cons_type: mutable pair */
-	DBUG_RETURN;
-}
-/**
-LET map_unwrap_beh(heads, cust, env) = \comb.[
-	SEND SELF TO heads
-	BECOME map_result_beh(comb, heads, cust, env)
-]
-**/
-static
-BEH_DECL(map_unwrap_beh)
-{
-	CONS* heads;
-
-	DBUG_ENTER("map_unwrap_beh");
-	ENSURE(is_pr(MINE));
-	heads = hd(MINE);
-	ENSURE(actorp(heads));
-	ENSURE(actorp(WHAT));
-
-	SEND(heads, SELF);
-	BECOME(map_result_beh, pr(WHAT, MINE));
 /*
+# Humus ....
+LET pair_map_beh(cust) = \(head, tail).[
+	CREATE pair WITH cons_type(head, tail)
+	SEND pair TO cust
+]
+# C ...
+	if (is_pr(head_tail)) {
+		SEND(cust, ACTOR(cons_type, head_tail));
+	}
 # Humus ....
 	(#map, req') : [
 		CREATE fork WITH fork_beh(k_pair, left, right)
@@ -2788,16 +2735,109 @@ BEH_DECL(map_unwrap_beh)
 
 		SEND(fork, pr(req_, req));
 	} else ...
-# Humus ....
-LET pair_map_beh(cust) = \(head, tail).[
-	CREATE pair WITH cons_type(head, tail)
-	SEND pair TO cust
-]
-# C ...
-	if (is_pr(head_tail)) {
-		SEND(cust, ACTOR(cons_type, head_tail));
-	}
 */
+static BEH_DECL(map_comb_beh);  /* forward */
+/**
+LET map_tail_beh(comb, env) = \(cust, heads).[
+	SEND SELF TO heads
+	BECOME map_comb_beh(comb, heads, cust, env)
+]
+**/
+static
+BEH_DECL(map_tail_beh)
+{
+	CONS* state = MINE;
+	CONS* comb;
+	CONS* env;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* heads;
+
+	DBUG_ENTER("map_tail_beh");
+	ENSURE(is_pr(state));
+	comb = hd(state);
+	env = tl(state);
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	heads = tl(msg);
+	ENSURE(actorp(heads));
+
+	SEND(heads, SELF);
+	BECOME(map_comb_beh, pr(comb, pr(heads, pr(cust, env))));
+	DBUG_RETURN;
+}
+/**
+LET map_comb_beh(comb, heads, cust, env) = \args.[
+	CASE args OF
+	$Nil : [  # no more args
+		SEND Nil TO cust
+	]
+	_ : [  # create a pair with combined result and computed tail
+		CREATE fork WITH fork_beh(k_pair, comb, SELF)
+#		SEND (cust, #comb, args, env) TO comb  # inline Pair combination
+		SEND ((#comb, args, env), heads) TO fork
+		CREATE k_pair WITH \(h, t).[  # pair_map_beh
+			SEND NEW cons_type(h, t) TO cust
+		]
+		BECOME map_tail_beh(comb, env)
+	]
+	END
+]
+**/
+static
+BEH_DECL(map_comb_beh)
+{
+	CONS* state = MINE;
+	CONS* comb;
+	CONS* heads;
+	CONS* cust;
+	CONS* env;
+	CONS* args = WHAT;
+
+	DBUG_ENTER("map_comb_beh");
+	ENSURE(is_pr(state));
+	comb = hd(state);
+	ENSURE(actorp(comb));
+	ENSURE(is_pr(tl(state)));
+	heads = hd(tl(state));
+	ENSURE(actorp(heads));
+	ENSURE(is_pr(tl(tl(state))));
+	cust = hd(tl(tl(state)));
+	ENSURE(actorp(cust));
+	env = tl(tl(tl(state)));
+	ENSURE(actorp(env));
+	ENSURE(actorp(args));
+
+	if (args == a_nil) {
+		SEND(cust, a_nil);
+	} else {
+		CONS* k_pair = ACTOR(pair_map_beh, cust);
+		CONS* fork = ACTOR(fork_beh, pr(k_pair, pr(comb, SELF)));
+
+		SEND(fork, pr(pr(ATOM("comb"), pr(args, env)), heads));
+		BECOME(map_tail_beh, pr(comb, env));
+	}
+	DBUG_RETURN;
+}
+/**
+LET map_unwrap_beh(heads, cust, env) = \comb.[
+	SEND SELF TO heads
+	BECOME map_comb_beh(comb, heads, cust, env)
+]
+**/
+static
+BEH_DECL(map_unwrap_beh)
+{
+	CONS* heads;
+
+	DBUG_ENTER("map_unwrap_beh");
+	ENSURE(is_pr(MINE));
+	heads = hd(MINE);
+	ENSURE(actorp(heads));
+	ENSURE(actorp(WHAT));
+
+	SEND(heads, SELF);
+	BECOME(map_comb_beh, pr(WHAT, MINE));
 	DBUG_RETURN;
 }
 /**
