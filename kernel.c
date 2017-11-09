@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-05";
+static char	_Version[] = "2017-11-09";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -2709,47 +2709,41 @@ BEH_DECL(map_head_beh)
 	DBUG_RETURN;
 }
 /**
-LET mk_heads(lists) = (
-	CASE lists OF
-	(h, t) : NEW map_head_beh(h, mk_heads(t))
-	_ : NIL
+LET map_result_beh(comb, heads, cust, env) = \args.[
+	CASE args OF
+	$Nil : [
+		# no more args
+	]
+	_ : [
+		SEND (comb, args) TO cust  # FIXME: report proposed combination
+#		CREATE expr WITH Pair(comb, args)
+#		SEND (cust, #eval, env) TO expr
+		SEND (cust, #comb, args, env) TO comb  # inline Pair combination
+	]
 	END
-)
-**/
-static CONS*
-mk_heads(CONFIG* cfg, CONS* p)
-{
-	CONS* q = NIL;
-
-	if (is_pr(p)) {
-		q = CFG_ACTOR(cfg, map_head_beh, pr(hd(p), mk_heads(cfg, tl(p))));
-	}
-	return q;
-}
-/**
-LET map_result_beh(cust, comb, env) = \args.[
-#	CREATE expr WITH Pair(comb, args)
-#	SEND (cust, #eval, env) TO expr
-	SEND (cust, #comb, args, env) TO comb  # inline Pair combination
 ]
 **/
 static
 BEH_DECL(map_result_beh)
 {
 	CONS* state = MINE;
-	CONS* cust;
 	CONS* comb;
+	CONS* heads;
+	CONS* cust;
 	CONS* env;
 	CONS* args = WHAT;
 
 	DBUG_ENTER("map_result_beh");
 	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
-	ENSURE(is_pr(tl(state)));
-	comb = hd(tl(state));
+	comb = hd(state);
 	ENSURE(actorp(comb));
-	env = tl(tl(state));
+	ENSURE(is_pr(tl(state)));
+	heads = hd(tl(state));
+	ENSURE(actorp(heads));
+	ENSURE(is_pr(tl(tl(state))));
+	cust = hd(tl(tl(state)));
+	ENSURE(actorp(cust));
+	env = tl(tl(tl(state)));
 	ENSURE(actorp(env));
 	ENSURE(actorp(args));
 
@@ -2758,33 +2752,24 @@ BEH_DECL(map_result_beh)
 	DBUG_RETURN;
 }
 /**
-LET map_unwrap_beh(lists, cust, env) = \comb.[
-	LET heads = $(mk_heads(lists))
-	SEND NEW map_result_beh(cust, comb, env) TO heads
+LET map_unwrap_beh(heads, cust, env) = \comb.[
+	SEND SELF TO heads
+	BECOME map_result_beh(comb, heads, cust, env)
 ]
 **/
 static
 BEH_DECL(map_unwrap_beh)
 {
-	CONS* state = MINE;
-	CONS* lists;
-	CONS* cust;
-	CONS* env;
-	CONS* comb = WHAT;
 	CONS* heads;
 
 	DBUG_ENTER("map_unwrap_beh");
-	ENSURE(is_pr(state));
-	lists = hd(state);
-	ENSURE(is_pr(tl(state)));
-	cust = hd(tl(state));
-	ENSURE(actorp(cust));
-	env = tl(tl(state));
-	ENSURE(actorp(comb));
+	ENSURE(is_pr(MINE));
+	heads = hd(MINE);
+	ENSURE(actorp(heads));
+	ENSURE(actorp(WHAT));
 
-	heads = mk_heads(CFG, lists);
-	SEND(heads, ACTOR(map_result_beh, pr(cust, pr(comb, env))));
-
+	SEND(heads, SELF);
+	BECOME(map_result_beh, pr(WHAT, MINE));
 /*
 # Humus ....
 	(#map, req') : [
@@ -2816,16 +2801,35 @@ LET pair_map_beh(cust) = \(head, tail).[
 	DBUG_RETURN;
 }
 /**
+LET mk_heads(lists) = (
+	CASE lists OF
+	(h, t) : NEW map_head_beh(h, mk_heads(t))
+	_ : NIL
+	END
+)
+**/
+static CONS*
+mk_heads(CONFIG* cfg, CONS* p)
+{
+	CONS* q = NIL;
+
+	if (is_pr(p)) {
+		q = CFG_ACTOR(cfg, map_head_beh, pr(hd(p), mk_heads(cfg, tl(p))));
+	}
+	return q;
+}
+/**
 LET map_args_beh(cust, env) = \(appl, lists).[
-	CREATE k_unwrap WITH map_unwrap_beh(lists, cust, env)
-	SEND (k_unwrap, #unwrap) TO appl
+	SEND (SELF, #unwrap) TO appl
+	BECOME map_unwrap_beh(mk_heads(lists), cust, env)
 ]
 **/
 static
 BEH_DECL(map_args_beh)
 {
-	CONS* state = MINE;
+	CONS* cust_env = MINE;
 #if 0
+	CONS* state = MINE;
 	CONS* cust;
 	CONS* env;
 #endif
@@ -2846,10 +2850,9 @@ BEH_DECL(map_args_beh)
 	ENSURE(actorp(appl));
 	lists = tl(msg);
 	ENSURE(is_pr(lists));  /* require at least one list */
-	ENSURE(!nilp(lists));
 
-	k_unwrap = ACTOR(map_unwrap_beh, pr(lists, state));
-	SEND(appl, pr(k_unwrap, ATOM("unwrap")));
+	SEND(appl, pr(SELF, ATOM("unwrap")));
+	BECOME(map_unwrap_beh, pr(mk_heads(CFG, lists), cust_env));
 	DBUG_RETURN;
 }
 
