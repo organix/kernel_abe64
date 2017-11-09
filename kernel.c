@@ -2849,7 +2849,6 @@ BEH_DECL(map_args_beh)
 	CONS* msg = WHAT;
 	CONS* appl;
 	CONS* lists;
-	CONS* k_unwrap;
 
 	DBUG_ENTER("map_args_beh");
 #if 0

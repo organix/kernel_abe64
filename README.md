@@ -77,7 +77,7 @@ $cond                                | x      |         |         | x
 get-list-metrics                     | x      |         |         | 
 list-tail                            | x      |         |         | 
 encycle!                             | o      |         |         | 
-map                                  | x      |         | .       | 
+map                                  | x      |         | x       | 
 $let                                 | x      |         |         | x
 
 #### 6. Core library features (II)
