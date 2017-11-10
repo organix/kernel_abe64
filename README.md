@@ -89,9 +89,22 @@ and?                                 | x      |         |         |
 or?                                  | x      |         |         | 
 $and?                                | x      |         |         | x
 $or?                                 | x      |         |         | x
+length                               | x      |         |         | 
+append                               | x      |         |         | 
+filter                               | x      |         |         | 
+reduce                               | x      |         |         | x
 get-current-environment              | x      | x       |         | x
 make-kernel-standard-environment     | x      | x       |         | 
+$let*                                | x      |         |         | 
+$letrec                              | x      |         |         | 
+$letrec*                             | x      |         |         | 
+$let-redirect                        | x      |         |         | 
+$let-safe                            | x      |         |         | 
+$remote-eval                         | x      |         |         | x
+$set!                                | o      |         |         | 
 $provide!                            | x      |         |         | x
+$import!                             | x      |         |         | 
+for-each                             | x      |         |         | 
 
 #### 15. Ports
 
