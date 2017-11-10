@@ -779,6 +779,58 @@ BEH_DECL(appl_type)
 /* FIXME: (eq? (wrap op) (wrap op)) ==> #t */
 
 /**
+LET seal_type(brand, value) = \(cust, req).[
+	CASE req OF
+	(#type_eq, $brand) : [ SEND True TO cust ]
+	(#type_eq, _) : [ SEND False TO cust ]
+	(#unseal, $brand) : [ SEND value TO cust ]
+	#write : [ SEND (cust, "#encapsulation") TO current_sink ]
+	_ : object_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(seal_type)
+{
+	CONS* state = MINE;
+	CONS* brand;
+	CONS* value;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("seal_type");
+	ENSURE(is_pr(state));
+	brand = hd(msg);
+	value = tl(msg);
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("brand", ("%s", cons_to_str(SELF)));
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req)
+	&& (hd(req) == ATOM("type_eq"))) {
+		SEND(cust, ((tl(req) == brand) ? a_true : a_false));
+	} else if (is_pr(req) &&
+	&& (hd(req) == ATOM("unseal"))) {
+		if (tl(req) == brand) {
+			SEND(cust, value);
+		} else {
+			THROW(pr(ATOM("Bad-Brand"), pr(SELF, req)));
+		}
+	} else if (req == ATOM("write")) {
+		SINK* sink = current_sink;
+		SEND(cust, (sink->put_cstr)(sink, "#encapsulation"));
+	} else {
+		object_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
+
+/**
 LET const_type(value) = \(cust, req).[
 	CASE req OF
 	(#type_eq, $const_type) : [ SEND True TO cust ]
@@ -790,7 +842,7 @@ LET const_type(value) = \(cust, req).[
 ]
 **/
 static
-BEH_DECL(const_type)  /* FIXME: extend to implement encapsulation types */
+BEH_DECL(const_type)
 {
 	CONS* value = MINE;
 	CONS* msg = WHAT;
@@ -1537,7 +1589,7 @@ BEH_DECL(any_type)
 /**
 LET env_type(parent, map) = \(cust, req).[
 	CASE req OF
-	(#type_eq, $unit_type) : [ SEND True TO cust ]
+	(#type_eq, $env_type) : [ SEND True TO cust ]
 	(#type_eq, _) : [ SEND False TO cust ]
 	(#lookup, key) : [
 		CASE map_find(map, key) OF
