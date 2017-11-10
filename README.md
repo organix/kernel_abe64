@@ -2,7 +2,7 @@ John Shutt's "Kernel" language implemented on ABE (C) 64-bit runtime. A [previou
 
 ## Kernel
 
-[Kernel](https://web.cs.wpi.edu/~jshutt/kernel.html) is a language in the LISP/Scheme family.
+[Kernel](https://web.cs.wpi.edu/~jshutt/kernel.html) is a language in the LISP/Scheme family. This implementation, while faithful to the novel semantics of Kernel and consistent with John's specification, is **not** a conforming Kernel because it does not provide all of the required features defined in the Kernel standard (R<sup>-1</sup>RK). However, we believe it is a useful subset which illustrates our own novel actor-based approach to the implementation. If you are looking for efficiency, look elsewhere. This implementation is a deeply-nested meta-interpreter.
 
 ### Using Docker
 
@@ -105,6 +105,49 @@ $set!                                | o      |         |         |
 $provide!                            | x      |         |         | x
 $import!                             | x      |         |         | 
 for-each                             | x      |         |         | 
+
+#### 8. Encapsulations
+
+symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
+-------------------------------------|--------|---------|---------|------------
+make-encapsulation-type              | x      |         |         | 
+
+#### 9. Promises
+
+symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
+-------------------------------------|--------|---------|---------|------------
+promise?                             | x      |         |         | 
+force                                | x      |         |         | 
+$lazy                                | x      |         |         | 
+memoize                              | x      |         |         | 
+
+#### 12. Numbers
+
+symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
+-------------------------------------|--------|---------|---------|------------
+number?                              | x      |         |         | 
+integer?                             | x      |         |         | 
+=?                                   | x      |         |         | 
+&lt;?                                   | x      |         |         | 
+&lt;=?                                  | x      |         |         | 
+&gt;=?                                  | x      |         |         | 
+&gt;?                                   | x      |         |         | 
++                                    | x      |         |         | 
+*                                    | x      |         |         | 
+-                                    | x      |         |         | 
+zero?                                | x      |         |         | 
+div                                  | x      |         |         | 
+mod                                  | x      |         |         | 
+div-and-mod                          | x      |         |         | 
+positive?                            | x      |         |         | 
+negative?                            | x      |         |         | 
+odd?                                 | x      |         |         | 
+even?                                | x      |         |         | 
+abs                                  | x      |         |         | 
+max                                  | x      |         |         | 
+min                                  | x      |         |         | 
+lcm                                  | x      |         |         | 
+gcd                                  | x      |         |         | 
 
 #### 15. Ports
 
