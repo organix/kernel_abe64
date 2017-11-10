@@ -113,7 +113,7 @@
 				((null? (cdr x)) (eval (car x) e))  ; tail context
 				((eval (car x) e) #t)
 				(#t (apply (wrap $or?) (cdr x) e)))))
-($define! reduce  # acyclic
+($define! reduce  ; acyclic
 	($lambda (ls bin id)
 		($cond	((null? ls) id)
 				((null? (cdr ls)) (car ls))
