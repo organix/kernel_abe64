@@ -779,7 +779,7 @@ BEH_DECL(appl_type)
 /* FIXME: (eq? (wrap op) (wrap op)) ==> #t */
 
 /**
-LET seal_type(brand, value) = \(cust, req).[
+LET sealed_type(brand, value) = \(cust, req).[
 	CASE req OF
 	(#type_eq, $brand) : [ SEND True TO cust ]
 	(#type_eq, _) : [ SEND False TO cust ]
@@ -790,7 +790,7 @@ LET seal_type(brand, value) = \(cust, req).[
 ]
 **/
 static
-BEH_DECL(seal_type)
+BEH_DECL(sealed_type)
 {
 	CONS* state = MINE;
 	CONS* brand;
@@ -799,34 +799,58 @@ BEH_DECL(seal_type)
 	CONS* cust;
 	CONS* req;
 
-	DBUG_ENTER("seal_type");
+	DBUG_ENTER("sealed_type");
 	ENSURE(is_pr(state));
-	brand = hd(msg);
-	value = tl(msg);
+	brand = hd(state);
+	value = tl(state);
 	ENSURE(is_pr(msg));
 	cust = hd(msg);
 	ENSURE(actorp(cust));
 	req = tl(msg);
 
-	DBUG_PRINT("brand", ("%s", cons_to_str(SELF)));
+	DBUG_PRINT("brand", ("%s", cons_to_str(brand)));
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
 	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
 	DBUG_PRINT("req", ("%s", cons_to_str(req)));
 	if (is_pr(req)
 	&& (hd(req) == ATOM("type_eq"))) {
 		SEND(cust, ((tl(req) == brand) ? a_true : a_false));
-	} else if (is_pr(req) &&
-	&& (hd(req) == ATOM("unseal"))) {
-		if (tl(req) == brand) {
-			SEND(cust, value);
-		} else {
-			THROW(pr(ATOM("Bad-Brand"), pr(SELF, req)));
-		}
+	} else if (is_pr(req)
+	&& (hd(req) == ATOM("unseal"))
+	&& (tl(req) == brand)) {
+		SEND(cust, value);
 	} else if (req == ATOM("write")) {
 		SINK* sink = current_sink;
 		SEND(cust, (sink->put_cstr)(sink, "#encapsulation"));
 	} else {
 		object_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
+	DBUG_RETURN;
+}
+/**
+LET brand_type = \(cust, value).[
+	CREATE encapsulation WITH sealed_type(SELF, value)
+	SEND encapsulation TO cust
+]
+**/
+static
+BEH_DECL(brand_type)
+{
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* value;
+	CONS* sealed;
+
+	DBUG_ENTER("sealed_type");
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	value = tl(msg);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+	sealed = ACTOR(sealed_type, pr(SELF, value));
+	SEND(cust, sealed);
 	DBUG_RETURN;
 }
 
@@ -976,7 +1000,6 @@ BEH_DECL(type_pred_oper)
 	CONS* req;
 
 	DBUG_ENTER("type_pred_oper");
-	ENSURE(funcp(type));
 	ENSURE(is_pr(msg));
 	cust = hd(msg);
 	ENSURE(actorp(cust));
@@ -2921,6 +2944,155 @@ BEH_DECL(map_args_beh)
 }
 
 /**
+LET seal_args_beh(cust, brand) = \(value, NIL).[
+	SEND (cust, value) TO brand
+]
+**/
+static
+BEH_DECL(seal_args_beh)
+{
+	CONS* state = MINE;
+	CONS* brand;
+	CONS* cust;
+	CONS* msg = WHAT;
+	CONS* value;
+
+	DBUG_ENTER("seal_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	brand = tl(state);
+	ENSURE(actorp(brand));
+	ENSURE(is_pr(msg));
+	value = hd(msg);
+	ENSURE(nilp(tl(msg)));
+
+	DBUG_PRINT("brand", ("%s", cons_to_str(brand)));
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+	SEND(brand, pr(cust, value));
+	DBUG_RETURN;
+}
+/**
+LET unseal_args_beh(cust, brand) = \(object, NIL).[
+	SEND (cust, #unseal, brand) TO object
+]
+**/
+static
+BEH_DECL(unseal_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* brand;
+	CONS* msg = WHAT;
+	CONS* object;
+
+	DBUG_ENTER("unseal_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	brand = tl(state);
+	ENSURE(actorp(brand));
+	ENSURE(is_pr(msg));
+	object = hd(msg);
+	ENSURE(nilp(tl(msg)));
+
+	DBUG_PRINT("brand", ("%s", cons_to_str(brand)));
+	SEND(object, pr(cust, pr(ATOM("unseal"), brand)));
+	DBUG_RETURN;
+}
+/**
+LET brand_oper(brand, args_beh) = \(cust, req).[
+	CASE req OF
+	(#comb, opnds, env) : [
+		CREATE k_args WITH args_beh(cust, brand)
+		SEND (k_args, #as_tuple) TO opnds
+	]
+	_ : oper_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(brand_oper)
+{
+	CONS* state = MINE;
+	CONS* brand;
+	CONS* args_beh;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("brand_oper");
+	ENSURE(is_pr(state));
+	brand = hd(state);
+	args_beh = tl(state);
+	ENSURE(funcp(args_beh));
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("brand", ("%s", cons_to_str(brand)));
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = hd(tl(req));
+/*		CONS* env = tl(tl(req)); */
+		CONS* k_args;
+
+		k_args = ACTOR((MK_BEH(args_beh)), pr(cust, brand));
+		SEND(opnds, pr(k_args, ATOM("as_tuple")));
+	} else {
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
+/**
+LET brand_args_beh(cust, env) = \NIL.[  # no arguments
+	CREATE brand WITH brand_type
+	CREATE seal WITH appl_type(NEW brand_oper(brand, seal_args_beh))
+	CREATE pred? WITH appl_type(NEW type_pred_oper(brand))
+	CREATE unseal WITH appl_type(NEW brand_oper(brand, unseal_args_beh))
+	SEND pr(seal, pr(pred?, pr(unseal, Nil))) TO cust
+]
+**/
+static
+BEH_DECL(brand_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+/*	CONS* env; */
+	CONS* brand;
+	CONS* pred;
+	CONS* seal;
+	CONS* unseal;
+
+	DBUG_ENTER("brand_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+/*	env = tl(state); */
+	ENSURE(nilp(WHAT));
+
+	brand = ACTOR(brand_type, NIL);
+	DBUG_PRINT("brand", ("%s", cons_to_str(brand)));
+	seal = ACTOR(appl_type, ACTOR(brand_oper, pr(brand, MK_FUNC(seal_args_beh))));
+	pred = ACTOR(appl_type, ACTOR(type_pred_oper, brand));
+	unseal = ACTOR(appl_type, ACTOR(brand_oper, pr(brand, MK_FUNC(unseal_args_beh))));
+	SEND(cust, ACTOR(cons_type, pr(
+		seal,
+		ACTOR(cons_type, pr(
+			pred, 
+			ACTOR(cons_type, pr(
+				unseal, 
+				a_nil
+			))
+		))
+	)));
+	DBUG_RETURN;
+}
+
+/**
 CREATE sink WITH \_.[]
 
 CREATE Inert WITH unit_type()
@@ -2929,6 +3101,7 @@ CREATE False WITH bool_type(FALSE)
 CREATE Nil WITH null_type()
 CREATE Ignore WITH any_type()
 
+ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
 ground_env("make-environment") = NEW appl_type(NEW args_oper(make_env_args_beh))
@@ -2987,6 +3160,9 @@ init_kernel()
 	a_ignore = ACTOR(any_type, NIL);
 	cfg_add_gc_root(CFG, a_ignore);		/* protect from gc */
 
+	ground_map = map_put(ground_map, ATOM("make-encapsulation-type"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(brand_args_beh))));
 	ground_map = map_put(ground_map, ATOM("map"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(map_args_beh))));
@@ -3620,6 +3796,22 @@ test_kernel()
 	expr = read_sexpr(string_source(
 		"(($lambda ((#ignore . x)) x) (cons 0 1))"));
 	expect = get_const(NUMBER(1));
+	assert_eval(expr, expect);
+
+	/*
+	 * ($sequence
+	 *		($define! (seal sealed? unseal) (make-encapsulation-type))
+	 *		($define! x (seal 42))
+	 *		($if (sealed? x) (unseal x) #f))
+	 * ==> 42
+	 */
+	expr = read_sexpr(string_source(
+"($sequence \n\
+	($define! (seal sealed? unseal) (make-encapsulation-type)) \n\
+	($define! x (seal 42)) \n\
+	($if (sealed? x) (unseal x) #f))"
+));
+	expect = get_const(NUMBER(42));
 	assert_eval(expr, expect);
 
 	/*

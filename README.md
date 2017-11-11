@@ -110,7 +110,7 @@ for-each                             | x      |         |         |
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
-make-encapsulation-type              | x      |         |         | 
+make-encapsulation-type              | x      | x       | x       | 
 
 #### 9. Promises
 
