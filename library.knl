@@ -123,6 +123,11 @@
 ($define! $remote-eval
 	($vau (o e) d
 		(eval o (eval e d))))
+($define! $set!
+	($vau (exp1 formals exp2) env
+		(eval (list $define! formals
+				(list (unwrap eval) exp2 env))
+			(eval exp1 env))))
 ($define! $provide!
 	($vau (symbols . body) env
 		(eval (list $define! symbols

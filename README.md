@@ -101,7 +101,7 @@ $letrec*                             | x      |         |         |
 $let-redirect                        | x      |         |         | 
 $let-safe                            | x      |         |         | 
 $remote-eval                         | x      |         |         | x
-$set!                                | o      |         |         | 
+$set!                                | o      |         |         | x
 $provide!                            | x      |         |         | x
 $import!                             | x      |         |         | 
 for-each                             | x      |         |         | 
