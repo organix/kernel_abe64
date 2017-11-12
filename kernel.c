@@ -3329,7 +3329,7 @@ read_sexpr(SOURCE* src)
 			if (isdigit(c)) {
 				minus = TRUE;
 			} else {
-				x = get_const(ATOM("-"));
+				x = get_symbol(ATOM("-"));
 			}
 		} 
 		if (x == NUMBER(0)) {
@@ -3621,6 +3621,26 @@ test_kernel()
 	expect = NUMBER(EOF);
 	assert(equal(expect, expr));
 
+	src = string_source("#t");
+	expr = read_sexpr(src);
+	expect = a_true;
+	assert(equal(expect, expr));
+
+	src = string_source("#f");
+	expr = read_sexpr(src);
+	expect = a_false;
+	assert(equal(expect, expr));
+
+	src = string_source("x");
+	expr = read_sexpr(src);
+	expect = get_symbol(ATOM("x"));
+	assert(equal(expect, expr));
+
+	src = string_source("nil");
+	expr = read_sexpr(src);
+	expect = get_symbol(ATOM("nil"));
+	assert(equal(expect, expr));
+
 	src = string_source("0");
 	expr = read_sexpr(src);
 	expect = get_const(NUMBER(0));
@@ -3638,7 +3658,7 @@ test_kernel()
 
 	src = string_source("-");
 	expr = read_sexpr(src);
-	expect = get_const(ATOM("-"));
+	expect = get_symbol(ATOM("-"));
 	assert(equal(expect, expr));
 
 /*
