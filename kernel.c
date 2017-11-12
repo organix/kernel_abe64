@@ -3603,6 +3603,23 @@ test_kernel()
 	expect = NUMBER(EOF);
 	assert(equal(expect, expr));
 
+	src = string_source("0");
+	expr = read_sexpr(src);
+	expect = get_const(NUMBER(0));
+	assert(equal(expect, expr));
+
+	src = string_source("42");
+	expr = read_sexpr(src);
+	expect = get_const(NUMBER(42));
+	assert(equal(expect, expr));
+
+/*
+	src = string_source("-1");
+	expr = read_sexpr(src);
+	expect = get_const(NUMBER(-1));
+	assert(equal(expect, expr));
+*/
+
 	src = string_source("()");
 	expr = read_sexpr(src);
 	expect = a_nil;
