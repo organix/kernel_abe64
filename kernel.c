@@ -3254,6 +3254,7 @@ init_kernel()
 CONS*
 read_sexpr(SOURCE* src)
 {
+	static char* delim = "\"();'`,[]{}|";
 	CONS* x;
 	int c;
 
@@ -3318,22 +3319,39 @@ read_sexpr(SOURCE* src)
 		} else {
 			x = NUMBER(')');  /* missing ')' */
 		}
-	} else if (c == '"') {
-		x = NUMBER(c);  /* FIXME: implement string literals */
-	} else if (ispunct(c) && ONE_OF(c, "'`,[]{}|")) {
-		x = NUMBER(c);  /* illegal lexeme */
-	} else if (isdigit(c)) {
+	} else if ((c == '-') || isdigit(c)) {
+		BOOL minus = FALSE;
+
 		x = NUMBER(0);
-		do {
-			x = NUMBER((MK_INT(x) * 10) + (c - '0'));
+		if (c == '-') {
 			(src->next)(src);
 			c = MK_INT((src->get)(src));
-		} while (isdigit(c));
-		if ((c == EOF) || isspace(c) || ONE_OF(c, "\"()")) {
-			x = get_const(x);
-		} else {
-			x = NUMBER(c);  /* malformed number */
+			if (isdigit(c)) {
+				minus = TRUE;
+			} else {
+				x = get_const(ATOM("-"));
+			}
+		} 
+		if (x == NUMBER(0)) {
+			do {
+				x = NUMBER((MK_INT(x) * 10) + (c - '0'));
+				(src->next)(src);
+				c = MK_INT((src->get)(src));
+			} while (isdigit(c));
+			if ((c == EOF) || isspace(c) || ONE_OF(c, delim)) {
+				if (minus == TRUE) {
+					x = get_const(NUMBER(-MK_INT(x)));
+				} else {
+					x = get_const(x);
+				}
+			} else {
+				x = NUMBER(c);  /* malformed number */
+			}			
 		}
+	} else if (c == '"') {
+		x = NUMBER(c);  /* FIXME: implement string literals */
+	} else if (ispunct(c) && ONE_OF(c, delim)) {
+		x = NUMBER(c);  /* illegal lexeme */
 	} else {
 		BOOL sharp = ((c == '#') ? TRUE : FALSE);
 
@@ -3342,7 +3360,7 @@ read_sexpr(SOURCE* src)
 			x = ATOM_X(x, tolower(c));  /* forced lowercase */
 			(src->next)(src);
 			c = MK_INT((src->get)(src));
-		} while (isgraph(c) && !ONE_OF(c, "\"()"));
+		} while (isgraph(c) && !ONE_OF(c, delim));
 		if (sharp == TRUE) {
 			if (x == ATOM("#inert")) {
 				x = a_inert;
@@ -3613,10 +3631,22 @@ test_kernel()
 	expect = get_const(NUMBER(42));
 	assert(equal(expect, expr));
 
-/*
 	src = string_source("-1");
 	expr = read_sexpr(src);
 	expect = get_const(NUMBER(-1));
+	assert(equal(expect, expr));
+
+	src = string_source("-");
+	expr = read_sexpr(src);
+	expect = get_const(ATOM("-"));
+	assert(equal(expect, expr));
+
+/*
+	expr = get_const(NUMBER(' '));
+	expect = get_const(NUMBER(32));
+	assert(equal(expect, expr));
+	src = string_source("' '");
+	expr = read_sexpr(src);
 	assert(equal(expect, expr));
 */
 
