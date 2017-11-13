@@ -42,6 +42,35 @@ typedef CONS* (*LAMBDA_x_y_z)(CONS* x, CONS* y, CONS* z);
 
 #define	THROW(msg)		SEND(ACTOR(throw_beh, NIL), (msg))
 
+static BEH_DECL(cons_type);  /* forward */
+static BEH_DECL(pair_type);  /* forward */
+
+BOOL
+eq(CONS* x, CONS* y)
+{
+	if (x == y) {
+		return TRUE;
+	}
+	if (nilp(x) || nilp(y)) {
+		return FALSE;
+	}
+	if (actorp(x) && actorp(y)) {
+		x = MK_CONS(x);
+		y = MK_CONS(y);
+		if (car(x) == car(y)) {  /* behaviors match */
+			if (car(x) == MK_FUNC(cons_type)) {
+				return FALSE;  /* mutable pairs are distinct */
+			}
+			return (eq(cdr(x), cdr(y)));
+		}
+		return FALSE;
+	}
+	if (consp(x) && consp(y)) {
+		return (eq(car(x), car(y)) && eq(cdr(x), cdr(y)));
+	}
+	return FALSE;
+}
+
 /**
 throw_beh = \msg.[
 	# report an exception
@@ -461,9 +490,6 @@ BEH_DECL(fork_beh)
 	BECOME(join_beh, pr(cust, pr(k_head, k_tail)));
 	DBUG_RETURN;
 }
-
-static BEH_DECL(cons_type);  /* forward */
-static BEH_DECL(pair_type);  /* forward */
 
 /**
 LET dotted_close_beh(cust) = \ok.[
@@ -906,12 +932,16 @@ get_const(CONS* value)  /* USE FACTORY TO INTERN INSTANCES */
 
 	DBUG_ENTER("get_const");
 	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+#if 0
 	constant = map_get_def(const_map, value, NIL);
 	if (nilp(constant)) {
 		constant = ACTOR(const_type, value);
 		const_map = map_put(const_map, value, constant);
 		rplaca(intern_map, const_map);
 	}
+#else
+	constant = ACTOR(const_type, value);
+#endif
 	DBUG_PRINT("const", ("%s", cons_to_str(constant)));
 	DBUG_RETURN constant;
 }
@@ -2332,7 +2362,7 @@ BEH_DECL(eq_args_beh)
 		rest = tl(args);
 		while (is_pr(rest)) {
 			DBUG_PRINT("rest", ("%s", cons_to_str(rest)));
-			if (!equal(first, hd(rest))) {
+			if (!eq(first, hd(rest))) {
 				result = a_false;
 				break;
 			}
@@ -3552,7 +3582,7 @@ BEH_DECL(assert_beh)
 
 	DBUG_ENTER("assert_beh");
 	DBUG_PRINT("", ("expect=%s", cons_to_str(expect)));
-	if (equal(expect, actual)) {
+	if (eq(expect, actual)) {
 		BECOME(abort_beh, NIL);
 	} else {
 		DBUG_PRINT("", ("actual=%s", cons_to_str(actual)));
@@ -3619,76 +3649,76 @@ test_kernel()
 	src = string_source("\r\n");
 	expr = read_sexpr(src);
 	expect = NUMBER(EOF);
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("#t");
 	expr = read_sexpr(src);
 	expect = a_true;
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("#f");
 	expr = read_sexpr(src);
 	expect = a_false;
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("x");
 	expr = read_sexpr(src);
 	expect = get_symbol(ATOM("x"));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("nil");
 	expr = read_sexpr(src);
 	expect = get_symbol(ATOM("nil"));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("0");
 	expr = read_sexpr(src);
 	expect = get_const(NUMBER(0));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("42");
 	expr = read_sexpr(src);
 	expect = get_const(NUMBER(42));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("-1");
 	expr = read_sexpr(src);
 	expect = get_const(NUMBER(-1));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("-");
 	expr = read_sexpr(src);
 	expect = get_symbol(ATOM("-"));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 /*
 	expr = get_const(NUMBER(' '));
 	expect = get_const(NUMBER(32));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 	src = string_source("' '");
 	expr = read_sexpr(src);
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 */
 
 	src = string_source("()");
 	expr = read_sexpr(src);
 	expect = a_nil;
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 /*
 	src = string_source("(x)");
 	expr = read_sexpr(src);
 	expect = pr(ATOM("x"), NIL);
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	src = string_source("(x y)");
 	expr = read_sexpr(src);
 	expect = pr(ATOM("x"), pr(ATOM("y"), NIL));
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 */
 	src = string_source("(x (y");
 	expr = read_sexpr(src);
 	expect = NUMBER(EOF);
-	assert(equal(expect, expr));
+	assert(eq(expect, expr));
 
 	/*
 	 * #inert
