@@ -44,6 +44,9 @@ typedef CONS* (*LAMBDA_x_y_z)(CONS* x, CONS* y, CONS* z);
 
 static BEH_DECL(cons_type);  /* forward */
 static BEH_DECL(pair_type);  /* forward */
+static BEH_DECL(env_type);  /* forward */
+static BEH_DECL(brand_type);  /* forward */
+static BEH_DECL(sealed_type);  /* forward */
 
 BOOL
 eq(CONS* x, CONS* y)
@@ -58,8 +61,11 @@ eq(CONS* x, CONS* y)
 		x = MK_CONS(x);
 		y = MK_CONS(y);
 		if (car(x) == car(y)) {  /* behaviors match */
-			if (car(x) == MK_FUNC(cons_type)) {
-				return FALSE;  /* mutable pairs are distinct */
+			if ((car(x) == MK_FUNC(cons_type))
+			||  (car(x) == MK_FUNC(env_type))
+			||  (car(x) == MK_FUNC(brand_type))
+			||  (car(x) == MK_FUNC(sealed_type))) {
+				return FALSE;  /* mutable/sealed types must remain distinct */
 			}
 			return (eq(cdr(x), cdr(y)));
 		}
