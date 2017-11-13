@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-11";
+static char	_Version[] = "2017-11-13";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -808,7 +808,6 @@ BEH_DECL(appl_type)
 	}
 	DBUG_RETURN;
 }
-/* FIXME: (eq? (wrap op) (wrap op)) ==> #t */
 
 /**
 LET sealed_type(brand, value) = \(cust, req).[
