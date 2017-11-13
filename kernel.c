@@ -872,7 +872,7 @@ BEH_DECL(brand_type)
 	CONS* value;
 	CONS* sealed;
 
-	DBUG_ENTER("sealed_type");
+	DBUG_ENTER("brand_type");
 	ENSURE(is_pr(msg));
 	cust = hd(msg);
 	ENSURE(actorp(cust));
@@ -937,18 +937,80 @@ get_const(CONS* value)  /* USE FACTORY TO INTERN INSTANCES */
 
 	DBUG_ENTER("get_const");
 	DBUG_PRINT("value", ("%s", cons_to_str(value)));
-#if 0
 	constant = map_get_def(const_map, value, NIL);
 	if (nilp(constant)) {
 		constant = ACTOR(const_type, value);
 		const_map = map_put(const_map, value, constant);
 		rplaca(intern_map, const_map);
 	}
-#else
-	constant = ACTOR(const_type, value);
-#endif
 	DBUG_PRINT("const", ("%s", cons_to_str(constant)));
 	DBUG_RETURN constant;
+}
+
+/**
+LET number_type(value) = \(cust, req).[
+	CASE req OF
+	(#type_eq, $number_type) : [ SEND True TO cust ]
+	(#type_eq, _) : [ SEND False TO cust ]
+	#value : [ SEND value TO cust ]
+	#write : [ SEND (cust, printable(value)) TO current_sink ]
+	_ : const_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(number_type)
+{
+	CONS* value = MINE;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("number_type");
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req)
+	&& (hd(req) == ATOM("type_eq"))) {
+		SEND(cust, ((tl(req) == MK_REF(number_type)) ? a_true : a_false));
+	} else {
+		const_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
+
+static CONS*
+get_number(CONS* value)
+{
+	CONS* number;
+
+	DBUG_ENTER("get_number");
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+	number = ACTOR(number_type, value);
+	DBUG_PRINT("number", ("%s", cons_to_str(number)));
+	DBUG_RETURN number;
+}
+
+static CONS*
+number_value(CONS* number)
+{
+	CONS* n = FALSE;
+
+	DBUG_ENTER("number_value");
+	DBUG_PRINT("number", ("%s", cons_to_str(number)));
+	if (actorp(number)) {
+		number = MK_CONS(number);
+		if (car(number) == MK_FUNC(number_type)) {
+			n = cdr(number);
+		}		
+	}
+	DBUG_PRINT("n", ("%s", cons_to_str(n)));
+	DBUG_RETURN n;
 }
 
 /**
@@ -3131,10 +3193,11 @@ BEH_DECL(brand_args_beh)
 CREATE sink WITH \_.[]
 
 CREATE Inert WITH unit_type()
-CREATE True WITH bool_type(TRUE)
-CREATE False WITH bool_type(FALSE)
 CREATE Nil WITH null_type()
 CREATE Ignore WITH any_type()
+
+CREATE True WITH bool_type(TRUE)
+CREATE False WITH bool_type(FALSE)
 
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
@@ -3157,6 +3220,7 @@ ground_env("$define!") = NEW args_oper(define_args_beh)
 ground_env("$sequence") = NEW sequence_oper
 ground_env("list") = NEW appl_type(NEW list_oper)
 
+ground_env("number?") = NEW appl_type(NEW type_pred_oper(number_type))
 ground_env("environment?") = NEW appl_type(NEW type_pred_oper(env_type))
 ground_env("operative?") = NEW appl_type(NEW type_pred_oper(oper_type))
 ground_env("applicative?") = NEW appl_type(NEW type_pred_oper(appl_type))
@@ -3186,14 +3250,30 @@ init_kernel()
 
 	a_inert = ACTOR(unit_type, NIL);
 	cfg_add_gc_root(CFG, a_inert);		/* protect from gc */
-	a_true = ACTOR(bool_type, BOOLEAN(TRUE));
-	cfg_add_gc_root(CFG, a_true);		/* protect from gc */
-	a_false = ACTOR(bool_type, BOOLEAN(FALSE));
-	cfg_add_gc_root(CFG, a_false);		/* protect from gc */
 	a_nil = ACTOR(null_type, NIL);
 	cfg_add_gc_root(CFG, a_nil);		/* protect from gc */
 	a_ignore = ACTOR(any_type, NIL);
 	cfg_add_gc_root(CFG, a_ignore);		/* protect from gc */
+
+#if 1
+	a_true = ACTOR(bool_type, BOOLEAN(TRUE));
+	cfg_add_gc_root(CFG, a_true);		/* protect from gc */
+	a_false = ACTOR(bool_type, BOOLEAN(FALSE));
+	cfg_add_gc_root(CFG, a_false);		/* protect from gc */
+#else
+	rplaca(intern_map,
+		map_put(
+			car(intern_map), 
+			TRUE, 
+			ACTOR(bool_type, BOOLEAN(TRUE))));
+	a_true = get_const(TRUE);
+	rplaca(intern_map,
+		map_put(
+			car(intern_map), 
+			FALSE, 
+			ACTOR(bool_type, BOOLEAN(FALSE))));
+	a_false = get_const(FALSE);
+#endif
 
 	ground_map = map_put(ground_map, ATOM("make-encapsulation-type"),
 		ACTOR(appl_type,
@@ -3250,6 +3330,9 @@ init_kernel()
 		ACTOR(appl_type,
 			ACTOR(list_oper, NIL)));
 
+	ground_map = map_put(ground_map, ATOM("number?"),
+		ACTOR(appl_type,
+			ACTOR(type_pred_oper, MK_REF(number_type))));
 	ground_map = map_put(ground_map, ATOM("environment?"),
 		ACTOR(appl_type,
 			ACTOR(type_pred_oper, MK_REF(env_type))));
@@ -3375,9 +3458,9 @@ read_sexpr(SOURCE* src)
 			} while (isdigit(c));
 			if ((c == EOF) || isspace(c) || ONE_OF(c, delim)) {
 				if (minus == TRUE) {
-					x = get_const(NUMBER(-MK_INT(x)));
+					x = get_number(NUMBER(-MK_INT(x)));
 				} else {
-					x = get_const(x);
+					x = get_number(x);
 				}
 			} else {
 				x = NUMBER(c);  /* malformed number */
@@ -3678,17 +3761,17 @@ test_kernel()
 
 	src = string_source("0");
 	expr = read_sexpr(src);
-	expect = get_const(NUMBER(0));
+	expect = get_number(NUMBER(0));
 	assert(eq(expect, expr));
 
 	src = string_source("42");
 	expr = read_sexpr(src);
-	expect = get_const(NUMBER(42));
+	expect = get_number(NUMBER(42));
 	assert(eq(expect, expr));
 
 	src = string_source("-1");
 	expr = read_sexpr(src);
-	expect = get_const(NUMBER(-1));
+	expect = get_number(NUMBER(-1));
 	assert(eq(expect, expr));
 
 	src = string_source("-");
@@ -3697,8 +3780,8 @@ test_kernel()
 	assert(eq(expect, expr));
 
 /*
-	expr = get_const(NUMBER(' '));
-	expect = get_const(NUMBER(32));
+	expr = get_number(NUMBER(' '));
+	expect = get_number(NUMBER(32));
 	assert(eq(expect, expr));
 	src = string_source("' '");
 	expr = read_sexpr(src);
@@ -3734,6 +3817,20 @@ test_kernel()
 	assert_eval(expr, expect);
 
 	/*
+	 * (ignore? #ignore #inert)
+	 * ==> #f
+	 */
+	expr = ACTOR(pair_type, pr(
+		get_symbol(ATOM("ignore?")),
+		ACTOR(pair_type, pr(
+			a_ignore,
+			ACTOR(pair_type, pr(
+				a_inert,
+				a_nil))))));
+	expect = a_false;
+	assert_eval(expr, expect);
+
+	/*
 	 * (boolean? #t #f)
 	 * ==> #t
 	 */
@@ -3748,17 +3845,19 @@ test_kernel()
 	assert_eval(expr, expect);
 
 	/*
-	 * (ignore? #ignore #inert)
-	 * ==> #f
+	 * (number? 0 1 -1)
+	 * ==> #t
 	 */
 	expr = ACTOR(pair_type, pr(
-		get_symbol(ATOM("ignore?")),
+		get_symbol(ATOM("number?")),
 		ACTOR(pair_type, pr(
-			a_ignore,
+			get_number(NUMBER(0)),
 			ACTOR(pair_type, pr(
-				a_inert,
-				a_nil))))));
-	expect = a_false;
+				get_number(NUMBER(1)),
+				ACTOR(pair_type, pr(
+					get_number(NUMBER(-1)),
+					a_nil))))))));
+	expect = a_true;
 	assert_eval(expr, expect);
 
 	/*
@@ -3865,7 +3964,7 @@ test_kernel()
 		42) \n\
 	314)\n\
 "));
-	expect = get_const(NUMBER(42));
+	expect = get_number(NUMBER(42));
 	assert_eval(expr, expect);
 
 	/*
@@ -3897,7 +3996,7 @@ test_kernel()
 	 */
 	expr = read_sexpr(string_source(
 		"(($lambda ((#ignore . x)) x) (cons 0 1))"));
-	expect = get_const(NUMBER(1));
+	expect = get_number(NUMBER(1));
 	assert_eval(expr, expect);
 
 	/*
@@ -3913,7 +4012,7 @@ test_kernel()
 	($define! x (seal 42)) \n\
 	($if (sealed? x) (unseal x) #f))"
 ));
-	expect = get_const(NUMBER(42));
+	expect = get_number(NUMBER(42));
 	assert_eval(expr, expect);
 
 	/*

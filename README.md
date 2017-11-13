@@ -125,7 +125,7 @@ memoize                              | x      |         |         |
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
-number?                              | x      |         |         | 
+number?                              | x      |         | x       | 
 integer?                             | x      |         |         | 
 =?                                   | x      |         |         | 
 &lt;?                                   | x      |         |         | 
