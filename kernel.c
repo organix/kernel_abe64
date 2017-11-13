@@ -3466,6 +3466,35 @@ read_sexpr(SOURCE* src)
 				x = NUMBER(c);  /* malformed number */
 			}			
 		}
+	} else if (c == '\'') {
+		(src->next)(src);
+		c = MK_INT((src->get)(src));
+		if (c == '\\') {
+			(src->next)(src);
+			c = MK_INT((src->get)(src));
+	 		switch(c) {
+				case '\\':
+				case '\'':
+				case '\"':	/* escaped literal */	break;
+				case 'r':	c = '\r';				break;
+				case 'n':	c = '\n';				break;
+				case 't':	c = '\t';				break;
+				case 'b':	c = '\b';				break;
+				default:	c = EOF;				break;
+			}
+		} else if (c == '\'') {
+			c = EOF;
+		}
+		x = get_number(NUMBER(c));
+		if (c != EOF) {
+			(src->next)(src);
+			c = MK_INT((src->get)(src));
+		}
+		if (c == '\'') {
+			(src->next)(src);
+		} else {
+			x = NUMBER(c);  /* malformed character literal */
+		}
 	} else if (c == '"') {
 		x = NUMBER(c);  /* FIXME: implement string literals */
 	} else if (ispunct(c) && ONE_OF(c, delim)) {
@@ -3779,14 +3808,17 @@ test_kernel()
 	expect = get_symbol(ATOM("-"));
 	assert(eq(expect, expr));
 
-/*
 	expr = get_number(NUMBER(' '));
 	expect = get_number(NUMBER(32));
 	assert(eq(expect, expr));
 	src = string_source("' '");
 	expr = read_sexpr(src);
 	assert(eq(expect, expr));
-*/
+
+	src = string_source("'\n'");
+	expr = read_sexpr(src);
+	expect = get_number(NUMBER(10));
+	assert(eq(expect, expr));
 
 	src = string_source("()");
 	expr = read_sexpr(src);
