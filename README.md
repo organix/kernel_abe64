@@ -271,6 +271,35 @@ root ----> | / | o-------> | o | o-------> | o | / |
                                                        +-------------------------+
 ```
 
+After `CONS* no = ATOM("no")`:
+```
+           +---+---+       +---+---+       +---+---+
+root ----> | / | o-------> | o | o-------> | o | / |
+           +---+---+       +-|-+---+       +-|-+---+
+                             |               |
+                 ATOM("x")   v   ATOM("n")   v
+                       |   +---+---+   |   +---+---+       +---+---+       +---+---+
+                       +-> | o | / |   +-> | o | o-------> | o | o-------> | o | / |
+                           +-|-+---+       +-|-+---+       +-|-+---+       +-|-+---+
+                             |               |               |               |
+                             v               v   ATOM("no")  v   ATOM("ni")  v
+                           +---+---+       +---+---+   |   +---+---+   |   +---+---+       +---+---+
+                           |'x'| / |   +-> |'n'| / |   +-> | o | / |   +-> | o | o-------> | o | / |
+                           +---+---+   |   +---+---+       +-|-+---+       +-|-+---+       +-|-+---+
+                                       |                     |               |               |
+                                       |                     v               v   ATOM("nil") v
+                                       |                   +---+---+       +---+---+   |   +---+---+
+                                       |                   |'o'| o |   +-> |'i'| o |   +-> | o | / |
+                                       |                   +---+-|-+   |   +---+-|-+       +-|-+---+
+                                       +-------------------------+-----|---------+           v
+                                                                       |                   +---+---+
+                                                                       |                   |'l'| o |
+                                                                       |                   +---+-|-+
+                                                                       +-------------------------+
+```
+
+The `car` of each ATOM can be read as a `NIL`-terminated linked-list of characters, starting from the end of the name. The 'cdr' of each ATOM is a `NIL`-terminated linked-list of suffixes, adding one character to the ATOM. Thus the `root` is a list of single-character atoms, each containing a list of all suffixes.
+
 ### Garbage Collection
 
 A statically-allocated `CELL` represents the `NIL` value. It is not linked into the GC lists.
