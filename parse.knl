@@ -51,12 +51,12 @@
 								(list #f in))))
 					(list #f in))))))
 ($define! match-alt
-	($lambda (matches)
+	($lambda matches
 		($if (null? matches)
 			match-fail
 			(match-or (car matches) (match-alt (cdr matches))))))
 ($define! match-seq
-	($lambda (matches)
+	($lambda matches
 		($if (null? matches)
 			match-empty
 			(match-and (car matches) (match-seq (cdr matches))))))
@@ -66,7 +66,7 @@
 ($define! match-star
 	($lambda (match)
 		($lambda (in)
-			((match-opt (match-and match (match-star match))) in)
+			((match-opt (match-and match (match-star match))) in))))
 ($define! match-plus
 	($lambda (match)
 		(match-and match (match-star match))))
@@ -87,9 +87,9 @@
 ; expr   = term ([-+] term)*
 ; term   = factor ([*/] factor)*
 ; factor = '(' expr ')' | number
-; number = [0-9]+ $#
+; number = [0-9]+
 ;
-($define match-expr
+($define! match-expr
 	($lambda (in)
 		((match-seq
 			match-term
@@ -97,7 +97,7 @@
 				(match-or (match-eq '-') (match-eq '+'))
 				match-term)))
 		in)))
-($define match-term
+($define! match-term
 	($lambda (in)
 		((match-seq
 			match-factor
@@ -105,7 +105,7 @@
 				(match-or (match-eq '*') (match-eq '/'))
 				match-factor)))
 		in)))
-($define match-factor
+($define! match-factor
 	($lambda (in)
 		((match-alt
 			(match-seq
@@ -114,11 +114,11 @@
 				(match-eq ')'))
 			match-number)
 		in)))
-($define match-number
+($define! match-number
 	($lambda (in)
 		((match-plus match-digit)
 		in)))
-($define match-digit
+($define! match-digit
 	($lambda (in)
 		((match-alt
 			(match-eq '0')
@@ -133,4 +133,10 @@
 			(match-eq '9'))
 		in)))
 
-(match-expr '1' '+' '2' '*' '3' '-' '4')
+;(match-expr (list '1' '+' '2' '*' '3' '-' '4'))
+($define! expr (list '1' '+' '2' '*' '3' '-' '4'))
+($define! f 
+	($lambda x 
+		($if (null? x) 
+			#inert 
+			(list (number? (car x)) (f (cdr x))))))

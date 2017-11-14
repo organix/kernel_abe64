@@ -13,7 +13,7 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 #include "dbug.h"
 DBUG_UNIT("kernel");
 
-static int M_limit = 100000;  /* actor messaging dispatch limit */
+static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
 static BEH_PROTO;	/* ==== GLOBAL ACTOR CONFIGURATION ==== */
 static FILE* input_file = NULL;
