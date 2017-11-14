@@ -298,7 +298,7 @@ root ----> | / | o-------> | o | o-------> | o | / |
                                                                        +-------------------------+
 ```
 
-The `car` of each ATOM can be read as a `NIL`-terminated linked-list of characters, starting from the end of the name. The 'cdr' of each ATOM is a `NIL`-terminated linked-list of suffixes, adding one character to the ATOM. Thus the `root` is a list of single-character atoms, each containing a list of all suffixes.
+The `car` of each ATOM can be read as a `NIL`-terminated linked-list of characters, starting from the end of the name. The `cdr` of each ATOM is a `NIL`-terminated linked-list of suffixes, adding one character to the ATOM. Thus the `root` is a list of single-character atoms, each containing a list of all suffixes.
 
 ### Garbage Collection
 
