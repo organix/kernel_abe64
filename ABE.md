@@ -164,11 +164,12 @@ _next:      |        0         |
 
 There are 5 double-linked lists and 2 phase variables used by the garbage collector. Each of the lists are initially empty. There are 4 garbage-collection phase-marker values (stored in `_prev`):
 
- * **Z** -- Permanently allocated
- * **X** -- Marked in-use during heap-walk
+ * **Z** -- Not visible to GC
+ * **X** -- Permanently allocated
  * **0** -- Even-phase allocation
  * **1** -- Odd-phase allocation
 
+Unused cells available for allocation are maintain in the `FREE` and `PERM` lists. After initialization, the GC lists could look like this:
 ````
 PREV_PHASE = 0
 MARK_PHASE = 1
@@ -207,24 +208,41 @@ _next:  +-->|        o-------------+
             +------------------+
 
       FREE
-        |   +------------------+
-first:  +-->|        0         |
-            +------------------+
-rest:       |       NIL        |
-            +--------------+---+
-_prev:  +------------o     | Z |<--+
-        |   +--------------+---+   |
-_next:  +-->|        o-------------+
-            +------------------+
+        |   +------------------+       +------------------+       +------------------+       +------------------+
+first:  +-->|        3         |       |        -         |       |        -         |       |        -         |
+            +------------------+       +------------------+       +------------------+       +------------------+
+rest:       |       NIL        |       |        -         |       |        -         |       |        -         |
+            +--------------+---+       +--------------+---+       +--------------+---+       +--------------+---+
+_prev:  +------------o     | Z |<---------------o     | Z |<---------------o     | Z |<---------------o     | Z |<--+
+        |   +--------------+---+       +--------------+---+       +--------------+---+       +--------------+---+   |
+_next:  +-->|        o---------------->|        o---------------->|        o---------------->|        o-------------+
+            +------------------+       +------------------+       +------------------+       +------------------+
 
       PERM
-        |   +------------------+
-first:  +-->|        0         |
-            +------------------+
-rest:       |       NIL        |
-            +--------------+---+
-_prev:  +------------o     | Z |<--+
-        |   +--------------+---+   |
-_next:  +-->|        o-------------+
-            +------------------+
+        |   +------------------+       +------------------+       +------------------+       +------------------+
+first:  +-->|        3         |       |        -         |       |        -         |       |        -         |
+            +------------------+       +------------------+       +------------------+       +------------------+
+rest:       |       NIL        |       |        -         |       |        -         |       |        -         |
+            +--------------+---+       +--------------+---+       +--------------+---+       +--------------+---+
+_prev:  +------------o     | Z |<---------------o     | Z |<---------------o     | Z |<---------------o     | Z |<--+
+        |   +--------------+---+       +--------------+---+       +--------------+---+       +--------------+---+   |
+_next:  +-->|        o---------------->|        o---------------->|        o---------------->|        o-------------+
+            +------------------+       +------------------+       +------------------+       +------------------+
+````
+Normally, cells are allocated from the `FREE` list. These cells are subject to garbage collection. They use phase-marker **0** or **1**, depending on the value of `MARK_PHASE`. The `FREE` list contains collectable cells available for allocation. When the `FREE` list is exhausted, a new batch of cells is allocated from system memory and linked into this list.
+
+Some cells, such as those used to represent symbolic constants (ATOMs), are *permanently* allocated. They are immune from garbage collection. They use phase-marker **X**. The `PERM` list contains permanent cells available for allocation. When the `PERM` list is exhausted, a new batch of cells is allocated from system memory and linked into this list.
+
+The garbage collection algorithm is essentially as follows:
+````
+gc(root) {
+	gc_age_cells();  /* move "fresh" cells to the "aged" list for possible collection */
+	assert(consp(root));
+	if (!nilp(root)) {  /* scan "root" cell */
+		gc_scan_cell(as_cell(root));  /* consider a value for addition to the "scan" list, return TRUE if queued */
+	}
+	while (gc_refresh_cell() == TRUE)  /* process a cell from the "scan" list, return FALSE if none remain */
+		;
+	gc_free_cells();  /* move unmarked "aged" cells to "free" list after scanning */
+}
 ````
