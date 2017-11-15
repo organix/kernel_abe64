@@ -4,7 +4,7 @@ ABE is a platform for writing [Actors](https://en.wikipedia.org/wiki/Actor_model
 
 ## Encoding
 
-Our target architecture is [LP64](https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models), where `int` is 32 bits (4 bytes); `void *`, `ptrdiff_t`, and `size_t` are all 64 bits (8 bytes). The ABE runtime uses a single-sized universal signed integer `WORD` value type (64 bits, in this case), which can be safely cast to/from `CONS *`. Memory is managed in `CONS`-sized units, each of which holds a pair of values (16 bytes). The garbage collector's book-keeping has 50% overhead for each allocation (32 bytes). Assuming 8-byte alignment for allocations, the least-significant 3 bits of each `WORD` can be used for type encoding. However, sufficient distinctions can be made using only the lowest 2 bits.
+Our target architecture is [LP64](https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models), where `int` is 32 bits (4 bytes); `void *`, `ptrdiff_t`, and `size_t` are all 64 bits (8 bytes). The ABE runtime uses a single-sized universal signed integer `WORD` value type (64 bits, in this case), which can be safely cast to/from `CONS *`. Memory is managed in `CONS`-sized units, each of which holds a pair of values (16 bytes). The garbage collector's book-keeping doubles the size of each allocation (32 bytes). Assuming 8-byte alignment for allocations, the least-significant 3 bits of each `WORD` can be used for type encoding. However, sufficient distinctions can be made using only the lowest 2 bits.
 
 ```
     2#000...000000  -- Boolean FALSE (also NULL in C)
@@ -21,6 +21,8 @@ The Boolean values `TRUE` and `FALSE` **must** be encoded as `1` and `0` respect
 
 ### Actor Message Events
 
+All computation in an actor system occurs in response to message events. Each actor message events delivers an immutable *message* to a target *actor*. Several macros are defined to allow easy access to components of the event from within a (C-coded) *behavior*. `WHAT` references the *message* contents. `SELF` references the target *actor*. `THIS` references the C procedure defining the actor's *behavior*, and `MINE` references the private *state* of this actor instance. The structure of the private state, if any, is determined solely by the implementation of the behavior procedure.
+
 ```
            +---+---+ WHAT
 EVENT ---> | o | o-------> message
@@ -36,6 +38,8 @@ EVENT ---> | o | o-------> message
 ```
 
 ### Atomic Symbols
+
+Atomic symbols are a memoized set of short character strings. Whenever a particular atomic symbol is encountered, a reference to a single immutable shared object is returned. This means that pointer equality implies symbol identity. Symbol matching is a simple pointer comparison.
 
 Empty symbol table:
 ```
