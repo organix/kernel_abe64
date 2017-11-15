@@ -63,7 +63,7 @@ root ----> | / | o-------> | o | / |
                              |
                              v
                            +---+---+
-           ATOM('n') ----> | o | / |
+           ATOM("n") ----> | o | / |
                            +-|-+---+
                              |
                              v
@@ -164,11 +164,11 @@ _next:      |        0         |
 
 There are 5 double-linked lists and 2 phase variables used by the garbage collector:
 
- * **AGED** &#8212; ...
- * **SCAN** &#8212; ...
- * **FRESH** &#8212; ...
- * **FREE** &#8212; ...
- * **PERM** &#8212; ...
+ * `AGED` &#8212; ...
+ * `SCAN` &#8212; ...
+ * `FRESH` &#8212; Collectable cells allocated since the last GC
+ * `FREE` &#8212; Unused collectable cells available for allocation
+ * `PERM` &#8212; Non-collectable (permanent) cells available for allocation
 
 There are 4 garbage-collection phase-marker values (stored in low bits of the `_prev` field):
 
@@ -177,7 +177,7 @@ There are 4 garbage-collection phase-marker values (stored in low bits of the `_
  * **0** &#8212; Even-phase allocation
  * **1** &#8212; Odd-phase allocation
 
-Unused cells available for allocation are maintain in the `FREE` and `PERM` lists. After initialization, the GC lists could look like this:
+After allocation of 2 collectable and 2 permanent cells (reachable from `root`), the GC lists could look like this:
 ````
 PREV_PHASE = 0
 MARK_PHASE = 1
@@ -204,16 +204,28 @@ _prev:  +------------o     | Z |<--+
 _next:  +-->|        o-------------+
             +------------------+
 
-      FRESH
-        |   +------------------+
-first:  +-->|        0         |
-            +------------------+
-rest:       |       NIL        |
-            +--------------+---+
-_prev:  +------------o     | Z |<--+
-        |   +--------------+---+   |
-_next:  +-->|        o-------------+
-            +------------------+
+      FRESH                     root
+        |   +------------------+  |   +------------------+      +------------------+
+first:  +-->|        0         |  +-->|       NIL        |      |        o-----------------+
+            +------------------+      +------------------+      +------------------+       |
+rest:       |       NIL        |      |        o--------------->|       NIL        |       |
+            +--------------+---+      +--------------+---+      +--------------+---+       |
+_prev:  +------------o     | Z |<--------------o     | 1 |<--------------o     | 1 |<--+   |
+        |   +--------------+---+      +--------------+---+      +--------------+---+   |   |
+_next:  +-->|        o--------------->|        o--------------->|        o-------------+   |
+            +------------------+      +------------------+      +------------------+       |
+                                                                                           |
+                                                            +------------------------------+
+                                                            |
+                                                            |   +------------------+      +------------------+
+                                                            +-->|        o--------------->|       'n'        |
+                                                                +------------------+      +------------------+
+                                                                |       NIL        |      |       NIL        |
+                                                                +--------------+---+      +--------------+---+
+                                                                |        -     | X |      |        -     | X |
+                                                                +--------------+---+      +--------------+---+
+                                                                |        -         |      |        -         |
+                                                                +------------------+      +------------------+
 
       FREE
         |   +------------------+      +------------------+      +------------------+      +------------------+
@@ -237,7 +249,7 @@ _prev:  +------------o     | Z |<--------------o     | Z |<--------------o     |
 _next:  +-->|        o--------------->|        o--------------->|        o--------------->|        o-------------+
             +------------------+      +------------------+      +------------------+      +------------------+
 ````
-Normally, cells are allocated from the `FREE` list. These cells are subject to garbage collection. They use phase-marker **0** or **1**, depending on the value of `MARK_PHASE`. The `FREE` list contains collectable cells available for allocation. When the `FREE` list is exhausted, a new batch of cells is allocated from system memory and linked into this list.
+Normally, cells are allocated from the `FREE` list. These cells are subject to garbage collection. They use phase-marker **0** or **1**, depending on the value of `MARK_PHASE`. The `FREE` list contains collectable cells available for allocation. When the `FREE` list is exhausted, a new batch of cells is allocated from system memory and linked into this list. When a `FREE` cell is allocated (and phase-marked), it is moved to the `FRESH` list.
 
 Some cells, such as those used to represent symbolic constants (ATOMs), are *permanently* allocated. They are immune from garbage collection. They use phase-marker **X**. The `PERM` list contains permanent cells available for allocation. When the `PERM` list is exhausted, a new batch of cells is allocated from system memory and linked into this list.
 
