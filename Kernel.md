@@ -1,14 +1,12 @@
-John Shutt's "Kernel" language implemented on ABE (C) 64-bit runtime. A [previous implementation](https://github.com/dalnefre/kernel_abe) targeted 32-bit platforms.
+# Kernel
 
-## Kernel
+[Kernel](https://web.cs.wpi.edu/~jshutt/kernel.html) is a language in the LISP/Scheme family. This implementation, while faithful to the novel semantics of Kernel and consistent with John's specification, is **not** a conforming Kernel because it does not provide all of the required features defined in the Kernel standard (R<sup>-1</sup>RK). However, we believe it is a useful subset which illustrates our own novel actor-based approach to the implementation. If you are looking for efficiency, look elsewhere &#8212; this implementation is a nested meta-interpreter.
 
-[Kernel](https://web.cs.wpi.edu/~jshutt/kernel.html) is a language in the LISP/Scheme family. This implementation, while faithful to the novel semantics of Kernel and consistent with John's specification, is **not** a conforming Kernel because it does not provide all of the required features defined in the Kernel standard (R<sup>-1</sup>RK). However, we believe it is a useful subset which illustrates our own novel actor-based approach to the implementation. If you are looking for efficiency, look elsewhere. This implementation is a deeply-nested meta-interpreter.
-
-### Kernel Standard Library
+## Kernel Standard Library
 
 The Kernel standard (R<sup>-1</sup>RK) defines the facilities provided by the "kernel standard environment", and the symbol names under which they are bound. The tables below list these facilities by section, in the order they are defined. Facilities marked with `o` are *optional* in the standard. The `Humus` column marks facilities defined by the Humus source in ["Semantic Extensibility with *Vau*"](http://www.dalnefre.com/wp/2011/12/semantic-extensibility-with-vau/). The `abe64` column marks facilities defined by the C source in "kernel.c". The `library` column marks facilities defined by the Kernel source in "library.knl".
 
-#### 4. Core types and primitive features
+### 4. Core types and primitive features
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
@@ -35,7 +33,7 @@ $vau                                 | x      | x       | x       |
 wrap                                 | x      | x       | x       | 
 unwrap                               | x      | x       | x       | 
 
-#### 5. Core library features (I)
+### 5. Core library features (I)
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
@@ -54,7 +52,7 @@ encycle!                             | o      |         |         |
 map                                  | x      |         | x       | 
 $let                                 | x      |         |         | x
 
-#### 6. Core library features (II)
+### 6. Core library features (II)
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
@@ -80,13 +78,13 @@ $provide!                            | x      |         |         | x
 $import!                             | x      |         |         | 
 for-each                             | x      |         |         | 
 
-#### 8. Encapsulations
+### 8. Encapsulations
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 make-encapsulation-type              | x      | x       | x       | 
 
-#### 9. Promises
+### 9. Promises
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
@@ -95,7 +93,7 @@ force                                | x      |         |         |
 $lazy                                | x      |         |         | 
 memoize                              | x      |         |         | 
 
-#### 12. Numbers
+### 12. Numbers
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
@@ -123,13 +121,13 @@ min                                  | x      |         |         |
 lcm                                  | x      |         |         | 
 gcd                                  | x      |         |         | 
 
-#### 15. Ports
+### 15. Ports
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 write                                | x      |         | x       | 
 
-#### Non-standard extensions
+### Non-standard extensions
 
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
