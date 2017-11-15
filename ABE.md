@@ -206,7 +206,7 @@ _next:  +-->|        o-------------+
 
       FRESH                     root
         |   +------------------+  |   +------------------+      +------------------+
-first:  +-->|        0         |  +-->|       NIL        |      |        o-----------------+
+first:  +-->|        2         |  +-->|       NIL        |      |        o-----------------+
             +------------------+      +------------------+      +------------------+       |
 rest:       |       NIL        |      |        o--------------->|       NIL        |       |
             +--------------+---+      +--------------+---+      +--------------+---+       |
@@ -253,6 +253,8 @@ Normally, cells are allocated from the `FREE` list. These cells are subject to g
 
 Some cells, such as those used to represent symbolic constants (ATOMs), are *permanently* allocated. They are immune from garbage collection. They use phase-marker **X**. The `PERM` list contains permanent cells available for allocation. When the `PERM` list is exhausted, a new batch of cells is allocated from system memory and linked into this list.
 
+### Garbage Collection Algorithm
+
 The garbage collection algorithm is essentially as follows:
 
  1. Move all cells from `FRESH` to `AGED`, and swap phase-markers (even/odd)
@@ -261,3 +263,5 @@ The garbage collection algorithm is essentially as follows:
      1. Move a cell from `SCAN` to `FRESH`
      2. Scan the cell, moving reachable cells from `AGED` to `SCAN` and mark them
  4. Move remaining `AGED` cells to `FREE` (they're unreachable)
+
+Note that allocation from the `FREE` list may continue concurrent with garbage collection. All `FREE` cells allocated after step 1 of the GC algorithm will be marked with the new/current phase-marker, as will all cells added to the `SCAN` list during GC. All cells moved from `FRESH` to `AGED` in step 1 will (initially) be marked with the old/previous phase-marker.
