@@ -1,8 +1,8 @@
-## Actor Based Runtime (ABE)
+# Actor Based Runtime (ABE)
 
 ABE is a platform for writing [Actors](https://en.wikipedia.org/wiki/Actor_model) in C.
 
-### Encoding
+## Encoding
 
 Our target architecture is [LP64](https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models), where `int` is 32 bits (4 bytes); `void *`, `ptrdiff_t`, and `size_t` are all 64 bits (8 bytes). The ABE runtime uses a single-sized universal signed integer `WORD` value type (64 bits, in this case), which can be safely cast to/from `CONS *`. Memory is managed in `CONS`-sized units, each of which holds a pair of values (16 bytes). The garbage collector's book-keeping has 50% overhead for each allocation (32 bytes). Assuming 8-byte alignment for allocations, the least-significant 3 bits of each `WORD` can be used for type encoding. However, sufficient distinctions can be made using only the lowest 2 bits.
 
@@ -17,9 +17,9 @@ Our target architecture is [LP64](https://en.wikipedia.org/wiki/64-bit_computing
 
 The Boolean values `TRUE` and `FALSE` **must** be encoded as `1` and `0` respectively, for compatibility with C-language definitions. Also, C requires `NULL` to also be `0`, but we do not use `NULL` directly. Instead, there is a statically-allocated `CONS` which is hard-coded to represent `NIL` for list-building purposes. Dynamically-allocated memory will never be placed at address `0`, so `TRUE` and `FALSE` do not conflict with type-tagged allocated values. Literal values (Number/Address) use logical right-shift to recover the value they represent. Reference values (Pair/Actor/Atom) simply mask off the type tag to recover the address they represent.
 
-### Internal Structure
+## Internal Structure
 
-#### Actor Message Events
+### Actor Message Events
 
 ```
            +---+---+ WHAT
@@ -35,7 +35,7 @@ EVENT ---> | o | o-------> message
           behavior
 ```
 
-#### Atomic Symbols
+### Atomic Symbols
 
 Empty symbol table:
 ```
@@ -134,7 +134,7 @@ root ----> | / | o-------> | o | o-------> | o | / |
 
 The `car` of each ATOM can be read as a `NIL`-terminated linked-list of characters, starting from the end of the name. The `cdr` of each ATOM is a `NIL`-terminated linked-list of suffixes, adding one character to the ATOM. Thus the `root` is a list of single-character atoms, each containing a list of all suffixes.
 
-### Garbage Collection
+## Garbage Collection
 
 A statically-allocated `CELL` represents the `NIL` value. It is not linked into the GC lists.
 
