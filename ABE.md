@@ -164,9 +164,9 @@ _next:      |        0         |
 
 There are 5 double-linked lists and 2 phase variables used by the garbage collector:
 
- * `AGED` &#8212; ...
- * `SCAN` &#8212; ...
- * `FRESH` &#8212; Collectable cells allocated since the last GC
+ * `AGED` &#8212; Candidates for garbage collection
+ * `SCAN` &#8212; Cells marked in-use during current GC scan
+ * `FRESH` &#8212; Collectable cells allocated since the last GC began
  * `FREE` &#8212; Unused collectable cells available for allocation
  * `PERM` &#8212; Non-collectable (permanent) cells available for allocation
 
@@ -218,7 +218,7 @@ _next:  +-->|        o--------------->|        o--------------->|        o------
                                                             +------------------------------+
                                                             |
                                                             |   +------------------+      +------------------+
-                                                            +-->|        o--------------->|       'n'        |
+                                               ATOM("n") ---+-->|        o--------------->|       'n'        |
                                                                 +------------------+      +------------------+
                                                                 |       NIL        |      |       NIL        |
                                                                 +--------------+---+      +--------------+---+
