@@ -165,8 +165,8 @@ _next:      |        0         |
 There are 5 double-linked lists and 2 phase variables used by the garbage collector:
 
  * `AGED` &#8212; Candidates for garbage collection
- * `SCAN` &#8212; Cells marked in-use during current GC scan
- * `FRESH` &#8212; Collectable cells allocated since the last GC began
+ * `SCAN` &#8212; In-use cells needing to be scanned
+ * `FRESH` &#8212; Collectable cells marked in-use since the last GC began
  * `FREE` &#8212; Unused collectable cells available for allocation
  * `PERM` &#8212; Non-collectable (permanent) cells available for allocation
 
@@ -254,14 +254,10 @@ Normally, cells are allocated from the `FREE` list. These cells are subject to g
 Some cells, such as those used to represent symbolic constants (ATOMs), are *permanently* allocated. They are immune from garbage collection. They use phase-marker **X**. The `PERM` list contains permanent cells available for allocation. When the `PERM` list is exhausted, a new batch of cells is allocated from system memory and linked into this list.
 
 The garbage collection algorithm is essentially as follows:
-````
-gc(root) {
-	gc_age_cells();  /* move "fresh" cells to the "aged" list for possible collection */
-	if (!nilp(root)) {  /* scan "root" cell */
-		gc_scan_cell(root);  /* consider a value for addition to the "scan" list, return TRUE if queued */
-	}
-	while (gc_refresh_cell() == TRUE)  /* process a cell from the "scan" list, return FALSE if none remain */
-		;
-	gc_free_cells();  /* move unmarked "aged" cells to "free" list after scanning */
-}
-````
+
+ 1. Move all cells from `FRESH` to `AGED`, and swap phase-markers (even/odd)
+ 2. Move root cell from `AGED` to `SCAN` and mark it
+ 3. While there are cells in `SCAN`
+     1. Move a cell from `SCAN` to `FRESH`
+     2. Scan the cell, moving reachable cells from `AGED` to `SCAN` and mark them
+ 4. Move remaining `AGED` cells to `FREE` (they're unreachable)
