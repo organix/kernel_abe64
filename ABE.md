@@ -21,7 +21,14 @@ The Boolean values `TRUE` and `FALSE` **must** be encoded as `1` and `0` respect
 
 ### Actor Message Events
 
-All computation in an actor system occurs in response to message events. Each actor message events delivers an immutable *message* to a target *actor*. Several macros are defined to allow easy access to components of the event from within a (C-coded) *behavior*. `WHAT` references the *message* contents. `SELF` references the target *actor*. `THIS` references the C procedure defining the actor's *behavior*, and `MINE` references the private *state* of this actor instance. The structure of the private state, if any, is determined solely by the implementation of the behavior procedure.
+All computation in an actor system occurs in response to message events. Each actor message events delivers an immutable *message* to a target *actor*. Several macros are defined to allow easy access to components of the event from within a (C-coded) *behavior*:
+
+ * `WHAT` &#8212; the *message* contents
+ * `SELF` &#8212; the target *actor*
+ * `THIS` &#8212; the C procedure defining the actor's *behavior*
+ * `MINE` &#8212; the private *state* of this actor instance
+
+The structure of the private *state*, if any, is determined solely by the implementation of the *behavior* procedure.
 
 ```
            +---+---+ WHAT
