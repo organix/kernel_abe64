@@ -4,7 +4,7 @@ This implementation is built in layers. The lowest layer is [ABE](ABE.md), an Ac
 
 ## Using Docker
 
-The Docker container environment provides a stable portable target platform for our project. Create a Docker image named `abe64` in which to compile and run Kernel.
+The [Docker](https://www.docker.com/) container environment provides a stable portable target platform for our project. Create a Docker image named `abe64` in which to compile and run Kernel.
 
 ```
 docker build -t abe64 .
