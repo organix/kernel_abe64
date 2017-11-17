@@ -269,6 +269,8 @@ Note that allocation from the `FREE` list may continue concurrent with garbage c
 #### Start New GC Pass
 
 When normal (collectable) cells are allocated, they are marked with the current phase-marker and moved onto the `FRESH` list. The GC process begins with moving all the `FRESH` cells to `AGED`, and swapping the phase-markers (starting a new phase). At this point, cells marked with the old/previous phase-marker are candidates for garbage collection, if they are not reachable from the current root cell. Subsequent allocations will be marked with the new/current phase-marker and moved to `FRESH`.
+
+After the GC phase-swap, the GC lists could look like this:
 ````
 PREV_PHASE = 1
 MARK_PHASE = 0
@@ -321,6 +323,57 @@ _next:  +-->|       o-----------+
 
 #### Scan Reachable Cells
 
-The first `AGED` cell to be scanned is the `root` cell, from which all other in-use cells can be reached. The `root` cell is moved from the `AGED` list to the `SCAN` list, so the `SCAN` list starts with exactly one cell to examine.
+The first `AGED` cell to be scanned is the `root` cell, from which all other in-use cells can be reached. The `root` cell is moved from the `AGED` list to the `SCAN` list, and marked with the current phase-marker. So the `SCAN` list starts with exactly one cell to examine.
 
-The main loop of the GC process removes cells one-at-a-time from the `SCAN` list, and examines the cell's `first` and `rest` pointers. If they refer to a collectable cell, the phase-marker of the referenced cell is examined. If the phase-marker is the current phase-marker, then the cell has already been determined to be in-use, otherwise that cell is moved from `AGED` to `SCAN` for subsequent consideration.
+The main loop of the GC process moves cells one-at-a-time from the `SCAN` list to the `FRESH` list. The cell's `first` and `rest` pointers are then examined. If they refer to a collectable cell, the phase-marker of the referenced cell is examined. If the phase-marker is the current phase-marker, then the cell has already been determined to be in-use, otherwise that cell is moved from `AGED` to `SCAN` for subsequent consideration, and marked with the current phase-marker.
+
+After the `root` cell is scanned, the GC lists could look like this:
+````
+PREV_PHASE = 1
+MARK_PHASE = 0
+
+      AGED
+        |   +---------------+
+first:  +-->|       2       |
+            +---------------+
+rest:       |      NIL      |
+            +-----------+---+
+_prev:  +-----------o   | Z |<--+
+        |   +-----------+---+   |
+_next:  +-->|       o-----------+
+            +---------------+
+                                                       
+                                                          +---------------+      +---------------+
+                                         ATOM("n") ---+-->|       o------------->|      'n'      |
+                                                      |   +---------------+      +---------------+
+                                                      |   |      NIL      |      |      NIL      |
+                                                      |   +-----------+---+      +-----------+---+
+                                                      |   |       -   | X |      |       -   | X |
+                                                      |   +-----------+---+      +-----------+---+
+                                                      |   |       -       |      |       -       |
+                                                      |   +---------------+      +---------------+
+                                                      |
+                               +----------------------|----+
+      SCAN                     |                      |    |
+        |   +---------------+  |   +---------------+  |    |
+first:  +-->|       0       |  |   |       o----------+    |
+            +---------------+  |   +---------------+       |
+rest:       |      NIL      |  +-->|      NIL      |       |
+            +-----------+---+      +-----------+---+       |
+_prev:  +-----------o   | Z |<-------------o   | 0 |<--+   |
+        |   +-----------+---+      +-----------+---+   |   |
+_next:  +-->|       o------------->|       o-----------+   |
+            +---------------+      +---------------+       |
+                                                           |
+      FRESH                   root                         |
+        |   +---------------+  |   +---------------+       |
+first:  +-->|       0       |  +-->|      NIL      |       |
+            +---------------+      +---------------+       |
+rest:       |      NIL      |      |       o---------------+
+            +-----------+---+      +-----------+---+
+_prev:  +-----------o   | Z |<-------------o   | 0 |<--+
+        |   +-----------+---+      +-----------+---+   |
+_next:  +-->|       o------------->|       o-----------+
+            +---------------+      +---------------+
+````
+
