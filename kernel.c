@@ -3544,6 +3544,7 @@ run_repl(int batch)
 		if (remain == 0) {
 			fprintf(stderr, "\nMessage limit of %d exceeded!\n", batch);
 			fprintf(stderr, "%d undelivered message(s)\n", cfg->q_count);
+/*			fprintf(stderr, "CONFIG_QUEUE = %s\n", cons_to_str(CONFIG_QUEUE(cfg))); */
 		}
 		if (cfg->t_count > 0) {
 			DBUG_PRINT("", ("waiting for timed event..."));
