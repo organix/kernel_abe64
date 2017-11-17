@@ -258,10 +258,69 @@ Some cells, such as those used to represent symbolic constants (ATOMs), are *per
 The garbage collection algorithm is essentially as follows:
 
  1. Move all cells from `FRESH` to `AGED`, and swap phase-markers (even/odd)
- 2. Move root cell from `AGED` to `SCAN` and mark it
+ 2. Move `root` cell from `AGED` to `SCAN` and mark it
  3. While there are cells in `SCAN`
      1. Move a cell from `SCAN` to `FRESH`
      2. Scan the cell, moving reachable cells from `AGED` to `SCAN` and mark them
  4. Move remaining `AGED` cells to `FREE` (they're unreachable)
 
 Note that allocation from the `FREE` list may continue concurrent with garbage collection. All `FREE` cells allocated after step 1 of the GC algorithm will be marked with the new/current phase-marker, as will all cells added to the `SCAN` list during GC. All cells moved from `FRESH` to `AGED` in step 1 will (initially) be marked with the old/previous phase-marker.
+
+#### Start New GC Pass
+
+When normal (collectable) cells are allocated, they are marked with the current phase-marker and moved onto the `FRESH` list. The GC process begins with moving all the `FRESH` cells to `AGED`, and swapping the phase-markers (starting a new phase). At this point, cells marked with the old/previous phase-marker are candidates for garbage collection, if they are not reachable from the current root cell. Subsequent allocations will be marked with the new/current phase-marker and moved to `FRESH`.
+````
+PREV_PHASE = 1
+MARK_PHASE = 0
+
+      AGED                    root
+        |   +---------------+  |   +---------------+      +---------------+
+first:  +-->|       2       |  +-->|      NIL      |      |       o---------------+
+            +---------------+      +---------------+      +---------------+       |
+rest:       |      NIL      |      |       o------------->|      NIL      |       |
+            +-----------+---+      +-----------+---+      +-----------+---+       |
+_prev:  +-----------o   | Z |<-------------o   | 1 |<-------------o   | 1 |<--+   |
+        |   +-----------+---+      +-----------+---+      +-----------+---+   |   |
+_next:  +-->|       o------------->|       o------------->|       o-----------+   |
+            +---------------+      +---------------+      +---------------+       |
+                                                                                  |
+                                                      +---------------------------+
+                                                      |
+                                                      |   +---------------+      +---------------+
+                                         ATOM("n") ---+-->|       o------------->|      'n'      |
+                                                          +---------------+      +---------------+
+                                                          |      NIL      |      |      NIL      |
+                                                          +-----------+---+      +-----------+---+
+                                                          |       -   | X |      |       -   | X |
+                                                          +-----------+---+      +-----------+---+
+                                                          |       -       |      |       -       |
+                                                          +---------------+      +---------------+
+
+      SCAN
+        |   +---------------+
+first:  +-->|       0       |
+            +---------------+
+rest:       |      NIL      |
+            +-----------+---+
+_prev:  +-----------o   | Z |<--+
+        |   +-----------+---+   |
+_next:  +-->|       o-----------+
+            +---------------+
+
+      FRESH
+        |   +---------------+
+first:  +-->|       0       |
+            +---------------+
+rest:       |      NIL      |
+            +-----------+---+
+_prev:  +-----------o   | Z |<--+
+        |   +-----------+---+   |
+_next:  +-->|       o-----------+
+            +---------------+
+````
+
+#### Scan Reachable Cells
+
+The first `AGED` cell to be scanned is the `root` cell, from which all other in-use cells can be reached. The `root` cell is moved from the `AGED` list to the `SCAN` list, so the `SCAN` list starts with exactly one cell to examine.
+
+The main loop of the GC process removes cells one-at-a-time from the `SCAN` list, and examines the cell's `first` and `rest` pointers. If they refer to a collectable cell, the phase-marker of the referenced cell is examined. If the phase-marker is the current phase-marker, then the cell has already been determined to be in-use, otherwise that cell is moved from `AGED` to `SCAN` for subsequent consideration.
