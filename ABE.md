@@ -334,7 +334,7 @@ MARK_PHASE = 0
 
       AGED
         |   +---------------+
-first:  +-->|       2       |
+first:  +-->|       0       |
             +---------------+
 rest:       |      NIL      |
             +-----------+---+
@@ -356,7 +356,7 @@ _next:  +-->|       o-----------+
                                +----------------------|----+
       SCAN                     |                      |    |
         |   +---------------+  |   +---------------+  |    |
-first:  +-->|       0       |  |   |       o----------+    |
+first:  +-->|       1       |  |   |       o----------+    |
             +---------------+  |   +---------------+       |
 rest:       |      NIL      |  +-->|      NIL      |       |
             +-----------+---+      +-----------+---+       |
@@ -377,3 +377,70 @@ _next:  +-->|       o------------->|       o-----------+
             +---------------+      +---------------+
 ````
 
+Scanning the `root` cell put one cell on the `SCAN` list. The `first` of that cell is an Atom, and the `rest` is `NIL`. Only mutable Pairs and Actors (to reach their "state") are scanned for GC, so this GC pass will be done after scanning this cell (moving it to `FRESH`).
+
+During the GC pass, additional cells may be allocated (from the `FREE` list). They will be marked with the current phase-marker and placed on the `FRESH` list, indicating they are in-use. In addition, whenever a cell is tranversed (e.g.: by `car` or `cdr`) its phase-marker is checked. If the cell is marked with the previous phase-marker it must be on the `AGED` list. If so, that cell is moved to `SCAN` and marked with the current phase-marker, because we know it is in-use.
+
+#### Free Unreachable Cells
+
+When the `SCAN` list is empty, we've marked and moved all reachable cells to `FRESH`, any remaining cells on the `AGED` list are unreachable. All remaining cells on the `AGED` list are moved to `FREE`, making them available for subsequent re-allocation.
+
+In our example, there were no unreachable cells to collect. At the GC pass is completed, the the GC lists could look like this:
+````
+PREV_PHASE = 1
+MARK_PHASE = 0
+
+      AGED
+        |   +---------------+
+first:  +-->|       0       |
+            +---------------+
+rest:       |      NIL      |
+            +-----------+---+
+_prev:  +-----------o   | Z |<--+
+        |   +-----------+---+   |
+_next:  +-->|       o-----------+
+            +---------------+
+
+      SCAN
+        |   +---------------+
+first:  +-->|       0       |
+            +---------------+
+rest:       |      NIL      |
+            +-----------+---+
+_prev:  +-----------o   | Z |<--+
+        |   +-----------+---+   |
+_next:  +-->|       o-----------+
+            +---------------+
+
+                                                          +---------------+      +---------------+
+                                         ATOM("n") ---+-->|       o------------->|      'n'      |
+                                                      |   +---------------+      +---------------+
+                                                      |   |      NIL      |      |      NIL      |
+                                                      |   +-----------+---+      +-----------+---+
+                                                      |   |       -   | X |      |       -   | X |
+                                                      |   +-----------+---+      +-----------+---+
+                                                      |   |       -       |      |       -       |
+                                                      |   +---------------+      +---------------+
+                                                      |
+                                                      +----------------------+
+      FRESH                   root                                           |
+        |   +---------------+  |   +---------------+      +---------------+  |
+first:  +-->|       2       |  +-->|      NIL      |      |       o----------+
+            +---------------+      +---------------+      +---------------+
+rest:       |      NIL      |      |       o------------->|      NIL      |
+            +-----------+---+      +-----------+---+      +-----------+---+
+_prev:  +-----------o   | Z |<-------------o   | 0 |<-------------o   | 0 |<--+
+        |   +-----------+---+      +-----------+---+      +-----------+---+   |
+_next:  +-->|       o------------->|       o------------->|       o-----------+
+            +---------------+      +---------------+      +---------------+
+````
+
+#### Garbage Collection Summary
+
+Garbage-collected memory cells are maintained in separate pools. The `FRESH` pool contains cells known to be in-use at some time after the beginning of the last GC pass. These are all marked with the current phase-marker. When a GC pass begins, all the `FRESH` cells are moved to `AGED` and the phase-markers flip, starting a new allocation phase. Note that the cells we moved are now all marked with the *previous* phase-marker.
+
+The GC pass traverses each cell reachable (via `first` or `rest`) from the `root`. All reachable cells are updated with the *current* phase-marker, and moved to `FRESH`. At the end of the GC pass, any cells remaining in `AGED` are unreachable, so they are recycled by moving them to `FREE`.
+
+The GC pools are maintained as double-linked lists through the `_prev` and `_next` pointers. Note that there is no "movement" or copying of cells. All cells remain at their original address, as they are linked into and out of GC pools. Also, new cells may be safely allocated (from the `FREE` list) while the GC algorithm is scanning `AGED` cells.
+
+No fragmentation is possible, since all allocations are the same size (one cell). Garbage-collection may safely proceed concurrent with allocation and message-delivery. And all allocated addresses are stable.
