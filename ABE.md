@@ -153,7 +153,7 @@ Our memory management strategy fulfills three simultaneous goals:
  * Maintain stable addresses for allocated objects
  * Perform safe garbage-collection concurrent with ongoing allocations
 
-Our approach is based on Henry Baker's ("Treadmill")[https://dl.acm.org/citation.cfm?id=130862] algorithm, publish as *The treadmill: real-time garbage collection without motion sickness* in **ACM SIGPLAN Notices**, Volume 27 Issue 3, March 1992.
+Our approach is based on Henry Baker's ["Treadmill"](https://dl.acm.org/citation.cfm?id=130862) algorithm, published as *The treadmill: real-time garbage collection without motion sickness* in **ACM SIGPLAN Notices**, Volume 27 Issue 3, March 1992.
 
 Fragmentation is avoided by allocating all memory in the same `CELL`-sized units. These cells contain 2 user-controlled pointers (`first` and `rest`), and 2 GC-private fields `_prev` and `_next`. A statically-allocated `CELL` represents the `NIL` value. It is not linked into the GC lists.
 
