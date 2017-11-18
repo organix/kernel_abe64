@@ -147,7 +147,15 @@ The `car` of each ATOM can be read as a `NIL`-terminated linked-list of characte
 
 ## Garbage Collection
 
-A statically-allocated `CELL` represents the `NIL` value. It is not linked into the GC lists.
+Our memory management strategy fulfills three simultaneous goals:
+
+ * Avoid fragmentation of allocatable memory
+ * Maintain stable addresses for allocated objects
+ * Perform safe garbage-collection concurrent with ongoing allocations
+
+Our approach is based on Henry Baker's ("Treadmill")[https://dl.acm.org/citation.cfm?id=130862] algorithm, publish as *The treadmill: real-time garbage collection without motion sickness* in **ACM SIGPLAN Notices**, Volume 27 Issue 3, March 1992.
+
+Fragmentation is avoided by allocating all memory in the same `CELL`-sized units. These cells contain 2 user-controlled pointers (`first` and `rest`), and 2 GC-private fields `_prev` and `_next`. A statically-allocated `CELL` represents the `NIL` value. It is not linked into the GC lists.
 
 ```
        NIL
@@ -176,6 +184,8 @@ There are 4 garbage-collection phase-marker values (stored in low bits of the `_
  * **X** &#8212; Permanently allocated
  * **0** &#8212; Even-phase allocation
  * **1** &#8212; Odd-phase allocation
+
+Each GC list has a header `CELL` in which the `first` field is used to cache the length of the list.
 
 After allocation of 2 collectable and 2 permanent cells (reachable from `root`), the GC lists could look like this:
 ````
