@@ -185,7 +185,7 @@ There are 4 garbage-collection phase-marker values (stored in low bits of the `_
  * **0** &#8212; Even-phase allocation
  * **1** &#8212; Odd-phase allocation
 
-Each GC list has a header `CELL` in which the `first` field is used to cache the length of the list.
+Each GC list has a header `CELL`. The `first` field of the header is used to cache the length of the list.
 
 After allocation of 2 collectable and 2 permanent cells (reachable from `root`), the GC lists could look like this:
 ````
@@ -377,7 +377,7 @@ _next:  +-->|       o------------->|       o-----------+   |
                                                            |
       FRESH                   root                         |
         |   +---------------+  |   +---------------+       |
-first:  +-->|       0       |  +-->|      NIL      |       |
+first:  +-->|       1       |  +-->|      NIL      |       |
             +---------------+      +---------------+       |
 rest:       |      NIL      |      |       o---------------+
             +-----------+---+      +-----------+---+
