@@ -13,7 +13,7 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 #include "dbug.h"
 DBUG_UNIT("kernel");
 
-static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
+static int M_limit = 1000 * 10; /* 1000;  /* actor messaging dispatch limit */
 
 static BEH_PROTO;	/* ==== GLOBAL ACTOR CONFIGURATION ==== */
 static FILE* input_file = NULL;
@@ -722,7 +722,7 @@ BEH_DECL(args_oper)
 
 /**
 LET appl_args_beh(cust, comb, env) = \args.[
-#	CREATE expr WITH Pair(comb, args)
+#	CREATE expr WITH pair_type(comb, args)
 #	SEND (cust, #eval, env) TO expr
 	SEND (cust, #comb, args, env) TO comb  # inline Pair combination
 ]
@@ -743,8 +743,14 @@ BEH_DECL(appl_args_beh)
 	ENSURE(is_pr(state));
 	cust = hd(state);
 	ENSURE(actorp(cust));
+	ENSURE(is_pr(tl(state)));
 	comb = hd(tl(state));
 	env = tl(tl(state));
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("comb", ("%s", cons_to_str(comb)));
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	DBUG_PRINT("args", ("%s", cons_to_str(args)));
 #if 0
 	expr = ACTOR(pair_type, pr(comb, args));
 	SEND(expr, pr(cust, pr(ATOM("eval"), env)));
@@ -788,6 +794,7 @@ BEH_DECL(appl_type)
 
 	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
 	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	DBUG_PRINT("comb", ("%s", cons_to_str(comb)));
 	if (is_pr(req)
 	&& (hd(req) == ATOM("type_eq"))) {
 		SEND(cust, ((tl(req) == MK_REF(appl_type)) ? a_true : a_false));
@@ -797,6 +804,8 @@ BEH_DECL(appl_type)
 		CONS* env = tl(tl(req));
 		CONS* k_args = ACTOR(appl_args_beh, pr(cust, pr(comb, env)));
 
+		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
+		DBUG_PRINT("env", ("%s", cons_to_str(env)));
 		SEND(opnds, pr(k_args, pr(ATOM("map"), pr(ATOM("eval"), env))));
 	} else if (req == ATOM("unwrap")) {
 		SEND(cust, comb);
@@ -4046,6 +4055,32 @@ test_kernel()
 	($if (sealed? x) (unseal x) #f))"
 ));
 	expect = get_number(NUMBER(42));
+	assert_eval(expr, expect);
+
+	/*
+	 * ($sequence
+	 *		($define! car ($lambda ((x . #ignore)) x))
+	 *		($define! cdr ($lambda ((#ignore . x)) x))
+	 *		($define! f 
+	 *			($lambda x 
+	 *				($if (null? x) 
+	 *					#inert 
+	 *					(list (number? (car x)) (apply f (cdr x))))))
+	 *		(f (list 1 2 3)))
+	 * ==> #inert
+	 */
+	expr = read_sexpr(string_source(
+"($sequence \n\
+	($define! car ($lambda ((x . #ignore)) x)) \n\
+	($define! cdr ($lambda ((#ignore . x)) x)) \n\
+	($define! f \n\
+		($lambda x \n\
+			($if (null? x) \n\
+				#inert \n\
+				(list (number? (car x)) (apply f (cdr x)))))) \n\
+	(f 1 2 3)"
+));
+	expect = a_inert;
 	assert_eval(expr, expect);
 
 	/*

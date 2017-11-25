@@ -139,4 +139,4 @@
 	($lambda x 
 		($if (null? x) 
 			#inert 
-			(list (number? (car x)) (f (cdr x))))))
+			(list (number? (car x)) (apply f (cdr x))))))
