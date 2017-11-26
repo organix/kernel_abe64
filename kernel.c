@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-13";
+static char	_Version[] = "2017-11-26";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -13,7 +13,7 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 #include "dbug.h"
 DBUG_UNIT("kernel");
 
-static int M_limit = 1000 * 10; /* 1000;  /* actor messaging dispatch limit */
+static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
 static BEH_PROTO;	/* ==== GLOBAL ACTOR CONFIGURATION ==== */
 static FILE* input_file = NULL;
@@ -937,6 +937,8 @@ BEH_DECL(const_type)
 	DBUG_RETURN;
 }
 
+#if 0  /* NON-NUMERIC CONSTANT VALUES ARE CURRENT NOT USED ANYWHERE */
+
 static CONS*
 get_const(CONS* value)  /* USE FACTORY TO INTERN INSTANCES */
 {
@@ -954,6 +956,8 @@ get_const(CONS* value)  /* USE FACTORY TO INTERN INSTANCES */
 	DBUG_PRINT("const", ("%s", cons_to_str(constant)));
 	DBUG_RETURN constant;
 }
+
+#endif
 
 /**
 LET number_type(value) = \(cust, req).[
@@ -1005,7 +1009,7 @@ get_number(CONS* value)
 }
 
 static CONS*
-number_value(CONS* number)
+number_value(CONS* number)  /* extract ABE numeric value from Kernel number */
 {
 	CONS* n = FALSE;
 
