@@ -2496,6 +2496,15 @@ BEH_DECL(eq_args_beh)
 	SEND(cust, result);
 	DBUG_RETURN;
 }
+/*
+($define! equal?
+	($lambda (x y)
+		($if (pair? x)
+			($if (equal? (car x) (car y))
+				(equal? (cdr x) (cdr y))
+				#f)
+			(eq? x y))))
+*/
 
 /**
 LET if_test_beh(cust, cnsq, altn, env) = \bool.[
@@ -2589,6 +2598,116 @@ BEH_DECL(cons_args_beh)
 	DBUG_PRINT("a", ("%s", cons_to_str(a)));
 	DBUG_PRINT("d", ("%s", cons_to_str(d)));
 	SEND(cust, ACTOR(cons_type, pr(a, d)));  /* cons produces mutable pairs */
+	DBUG_RETURN;
+}
+
+/**
+LET car_pair_beh(cust) = \pair.[
+	CASE pair OF
+	(h, t) : [ SEND h TO cust ]
+	_ : THROW (#Not-Understood, SELF, pair)
+]
+**/
+static
+BEH_DECL(car_pair_beh)
+{
+	CONS* cust = MINE;
+	CONS* pair = WHAT;
+
+	DBUG_ENTER("car_pair_beh");
+	ENSURE(actorp(cust));
+	if (is_pr(pair)) {
+		SEND(cust, hd(pair));
+	} else {
+		THROW(pr(ATOM("Not-Understood"), pr(SELF, pair)));
+	}
+	DBUG_RETURN;
+}
+/**
+# ($define! car ($lambda ((x . #ignore)) x))
+
+LET car_args_beh(cust, env) = \(pair, NIL).[
+	SEND (k_pair, #as_pair) TO pair
+	CREATE k_pair WITH \pr.[
+		SEND car(pr) TO cust
+	]
+]
+**/
+static
+BEH_DECL(car_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* msg = WHAT;
+	CONS* pair;
+	CONS* k_pair;
+
+	DBUG_ENTER("car_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	ENSURE(is_pr(msg));
+	pair = hd(msg);
+	ENSURE(nilp(tl(msg)));
+
+	/* FIXME: maybe reach into pair-actor representation directly? */
+	k_pair = ACTOR(car_pair_beh, cust);
+	SEND(pair, pr(k_pair, ATOM("as_pair")));
+	DBUG_RETURN;
+}
+
+/**
+LET cdr_pair_beh(cust) = \pair.[
+	CASE pair OF
+	(h, t) : [ SEND t TO cust ]
+	_ : THROW (#Not-Understood, SELF, pair)
+]
+**/
+static
+BEH_DECL(cdr_pair_beh)
+{
+	CONS* cust = MINE;
+	CONS* pair = WHAT;
+
+	DBUG_ENTER("cdr_pair_beh");
+	ENSURE(actorp(cust));
+	if (is_pr(pair)) {
+		SEND(cust, tl(pair));
+	} else {
+		THROW(pr(ATOM("Not-Understood"), pr(SELF, pair)));
+	}
+	DBUG_RETURN;
+}
+/**
+# ($define! cdr ($lambda ((#ignore . x)) x))
+
+LET cdr_args_beh(cust, env) = \(pair, NIL).[
+	SEND (k_pair, #as_pair) TO pair
+	CREATE k_pair WITH \pr.[
+		SEND cdr(pr) TO cust
+	]
+]
+**/
+static
+BEH_DECL(cdr_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* msg = WHAT;
+	CONS* pair;
+	CONS* k_pair;
+
+	DBUG_ENTER("cdr_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	ENSURE(is_pr(msg));
+	pair = hd(msg);
+	ENSURE(nilp(tl(msg)));
+
+	/* FIXME: maybe reach into pair-actor representation directly? */
+	k_pair = ACTOR(cdr_pair_beh, cust);
+	SEND(pair, pr(k_pair, ATOM("as_pair")));
 	DBUG_RETURN;
 }
 
@@ -3267,6 +3386,8 @@ ground_env("set-cdr!") = NEW appl_type(NEW args_oper(set_cdr_args_beh))
 ground_env("newline") = NEW appl_type(NEW args_oper(newline_args_beh))
 ground_env("write") = NEW appl_type(NEW args_oper(write_args_beh))
 ground_env("cons") = NEW appl_type(NEW args_oper(cons_args_beh))
+ground_env("car") = NEW appl_type(NEW args_oper(car_args_beh))
+ground_env("cdr") = NEW appl_type(NEW args_oper(cdr_args_beh))
 ground_env("$if") = NEW args_oper(if_args_beh)
 ground_env("eq?") = NEW appl_type(NEW args_oper(eq_args_beh))
 ground_env("$lambda") = NEW lambda_oper
@@ -3367,6 +3488,12 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("cons"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(cons_args_beh))));
+	ground_map = map_put(ground_map, ATOM("car"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(car_args_beh))));
+	ground_map = map_put(ground_map, ATOM("cdr"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(cdr_args_beh))));
 	ground_map = map_put(ground_map, ATOM("$if"),
 		ACTOR(args_oper, MK_FUNC(if_args_beh)));
 	ground_map = map_put(ground_map, ATOM("eq?"),
@@ -4110,28 +4237,24 @@ test_kernel()
 
 	/*
 	 * ($sequence
-	 *		($define! car ($lambda ((x . #ignore)) x))
-	 *		($define! cdr ($lambda ((#ignore . x)) x))
 	 *		($define! f 
 	 *			($lambda x 
 	 *				($if (null? x) 
 	 *					#inert 
 	 *					(list (number? (car x)) (apply f (cdr x))))))
-	 *		(f 1 2 3))
+	 *		(car (f 1 2 3)))
 	 * ==> #inert
 	 */
 	expr = read_sexpr(string_source(
 "($sequence \n\
-	($define! car ($lambda ((x . #ignore)) x)) \n\
-	($define! cdr ($lambda ((#ignore . x)) x)) \n\
 	($define! f \n\
 		($lambda x \n\
 			($if (null? x) \n\
 				#inert \n\
 				(list (number? (car x)) (apply f (cdr x)))))) \n\
-	(f 1 2 3))"
+	(car (f 1 2 3)))"
 ));
-	expect = a_inert;
+	expect = a_true;
 	assert_eval(expr, expect);
 
 	/*

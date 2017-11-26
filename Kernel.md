@@ -41,8 +41,8 @@ $sequence                            | x      | x       | x       |
 list                                 | x      | x       | x       | 
 list*                                | x      |         |         | x
 $lambda                              | x      | x       | x       | 
-car                                  | x      |         |         | x
-cdr                                  | x      |         |         | x
+car                                  | x      |         | x       | 
+cdr                                  | x      |         | x       | 
 caar, cadr, ... cddddr               | x      |         |         | x
 apply                                | x      |         | x       | 
 $cond                                | x      |         |         | x

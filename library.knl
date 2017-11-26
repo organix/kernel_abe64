@@ -3,10 +3,10 @@
 ;;;
 
 ; Section 5
-($define! car
-	($lambda ((x . #ignore)) x))
-($define! cdr
-	($lambda ((#ignore . x)) x))
+;($define! car
+;	($lambda ((x . #ignore)) x))
+;($define! cdr
+;	($lambda ((#ignore . x)) x))
 ;...
 ($define! caar
 	($lambda (((x . #ignore) . #ignore)) x))
@@ -134,7 +134,7 @@
 ;;; Concurrency
 ;;;
 
-($define! $parallel list)  ; only valid if 'list' evals in parallel
+($define! $parallel list)  ; only valid because 'list' evals in parallel
 
 ;;;
 ;;; Bonus definitions
