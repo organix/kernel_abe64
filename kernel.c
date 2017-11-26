@@ -1011,7 +1011,7 @@ get_number(CONS* value)
 static CONS*
 number_value(CONS* number)  /* extract ABE numeric value from Kernel number */
 {
-	CONS* n = FALSE;
+	CONS* n = FALSE;  /* return FALSE if not a number */
 
 	DBUG_ENTER("number_value");
 	DBUG_PRINT("number", ("%s", cons_to_str(number)));
@@ -2509,6 +2509,46 @@ BEH_DECL(eq_args_beh)
 				#f)
 			(eq? x y))))
 */
+/**
+LET num_eq_args_beh(cust, env) = \args.[ ... ]
+**/
+static
+BEH_DECL(num_eq_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* args = WHAT;
+	CONS* first;
+	CONS* rest;
+	CONS* n;
+	CONS* result;
+
+	DBUG_ENTER("num_eq_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+
+	result = a_true;
+	if (is_pr(args)) {
+		first = number_value(hd(args));
+		DBUG_PRINT("first", ("%s", cons_to_str(first)));
+		ENSURE(numberp(first));
+		rest = tl(args);
+		while (is_pr(rest)) {
+			DBUG_PRINT("rest", ("%s", cons_to_str(rest)));
+			n = number_value(hd(rest));
+			ENSURE(numberp(n));
+			if (first != n) {  /* number values can be compared directly */
+				result = a_false;
+				break;
+			}
+			rest = tl(rest);
+		}
+	}
+	DBUG_PRINT("result", ("%s", cons_to_str(result)));
+	SEND(cust, result);
+	DBUG_RETURN;
+}
 
 /**
 LET if_test_beh(cust, cnsq, altn, env) = \bool.[
@@ -3379,6 +3419,7 @@ CREATE True WITH bool_type(TRUE)
 CREATE False WITH bool_type(FALSE)
 
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
+ground_env("=?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
 ground_env("make-environment") = NEW appl_type(NEW args_oper(make_env_args_beh))
@@ -3460,6 +3501,9 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("make-encapsulation-type"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(brand_args_beh))));
+	ground_map = map_put(ground_map, ATOM("=?"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(num_eq_args_beh))));
 	ground_map = map_put(ground_map, ATOM("map"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(map_args_beh))));
