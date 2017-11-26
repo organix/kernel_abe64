@@ -75,12 +75,6 @@
 				(equal? (cdr x) (cdr y))
 				#f)
 			(eq? x y))))
-($define! apply
-	($lambda (appv arg . opt)
-		(eval (cons (unwrap appv) arg)
-			($if (null? opt)
-				(make-environment)
-				(car opt)))))
 ($define! list*
 	($lambda (head . tail)
 		($if (null? tail)

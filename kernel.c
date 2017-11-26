@@ -767,8 +767,7 @@ LET appl_type(comb) = \(cust, req).[
 	(#comb, opnds, env) : [
 		SEND (k_args, #map, #eval, env) TO opnds
 		CREATE k_args WITH \args.[  # appl_args_beh
-			CREATE expr WITH Pair(comb, args)
-			SEND (cust, #eval, env) TO expr
+			SEND (cust, #comb, args, env) TO comb  # inline Pair combination
 		]
 	]
 	#unwrap : [ SEND comb TO cust ]
@@ -2015,6 +2014,54 @@ BEH_DECL(eval_args_beh)
 }
 
 /**
+LET apply_args_beh(cust, _) = \(appl, args, opt).[
+	LET env = $(
+		CASE opt OF
+		NIL : NEW env_type(NIL, NIL)
+		(env', NIL) : env'
+		END
+	)
+	SEND (k_comb, #unwrap) TO appl
+	CREATE k_comb WITH \comb.[  # pair_comb_beh
+		SEND (cust, #comb, args, env) TO comb  # inline Pair combination
+	]
+]
+**/
+static
+BEH_DECL(apply_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* msg = WHAT;
+	CONS* appl;
+	CONS* args;
+	CONS* env;
+	CONS* k_comb;
+
+	DBUG_ENTER("apply_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	ENSURE(is_pr(msg));
+	appl = hd(msg);
+	ENSURE(is_pr(tl(msg)));
+	args = hd(tl(msg));
+	env = tl(tl(msg));
+
+	DBUG_PRINT("appl", ("%s", cons_to_str(appl)));
+	DBUG_PRINT("args", ("%s", cons_to_str(args)));
+	if (nilp(env)) {
+		env = ACTOR(env_type, pr(NIL, NIL));  /* new empty environment */
+	} else if (is_pr(env) && nilp(tl(env))) {
+		env = hd(env);
+	}
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	k_comb = ACTOR(pair_comb_beh, pr(cust, pr(args, env)));
+	SEND(appl, pr(k_comb, ATOM("unwrap")));
+	DBUG_RETURN;
+}
+
+/**
 LET eval_sequence_beh(cust, body, env) = \$Inert.[  # eval_sequence_beh
 	SEND (cust, #foldl, Inert, (\(x,y).y), #eval, env) TO body
 ]
@@ -3213,6 +3260,7 @@ ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
 ground_env("make-environment") = NEW appl_type(NEW args_oper(make_env_args_beh))
 ground_env("eval") = NEW appl_type(NEW args_oper(eval_args_beh))
+ground_env("apply") = NEW appl_type(NEW args_oper(apply_args_beh))
 ground_env("copy-es-immutable") = NEW appl_type(NEW args_oper(copy_es_immutable_args_beh))
 ground_env("set-car!") = NEW appl_type(NEW args_oper(set_car_args_beh))
 ground_env("set-cdr!") = NEW appl_type(NEW args_oper(set_cdr_args_beh))
@@ -3298,6 +3346,9 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("eval"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(eval_args_beh))));
+	ground_map = map_put(ground_map, ATOM("apply"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(apply_args_beh))));
 	ground_map = map_put(ground_map, ATOM("copy-es-immutable"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(copy_es_immutable_args_beh))));
@@ -4066,7 +4117,7 @@ test_kernel()
 	 *				($if (null? x) 
 	 *					#inert 
 	 *					(list (number? (car x)) (apply f (cdr x))))))
-	 *		(f (list 1 2 3)))
+	 *		(f 1 2 3))
 	 * ==> #inert
 	 */
 	expr = read_sexpr(string_source(
@@ -4078,7 +4129,7 @@ test_kernel()
 			($if (null? x) \n\
 				#inert \n\
 				(list (number? (car x)) (apply f (cdr x)))))) \n\
-	(f 1 2 3)"
+	(f 1 2 3))"
 ));
 	expect = a_inert;
 	assert_eval(expr, expect);

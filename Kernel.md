@@ -44,7 +44,7 @@ $lambda                              | x      | x       | x       |
 car                                  | x      |         |         | x
 cdr                                  | x      |         |         | x
 caar, cadr, ... cddddr               | x      |         |         | x
-apply                                | x      |         |         | x
+apply                                | x      |         | x       | 
 $cond                                | x      |         |         | x
 get-list-metrics                     | x      |         |         | 
 list-tail                            | x      |         |         | 
