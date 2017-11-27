@@ -2509,46 +2509,6 @@ BEH_DECL(eq_args_beh)
 				#f)
 			(eq? x y))))
 */
-/**
-LET num_eq_args_beh(cust, env) = \args.[ ... ]
-**/
-static
-BEH_DECL(num_eq_args_beh)
-{
-	CONS* state = MINE;
-	CONS* cust;
-	CONS* args = WHAT;
-	CONS* first;
-	CONS* rest;
-	CONS* n;
-	CONS* result;
-
-	DBUG_ENTER("num_eq_args_beh");
-	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
-
-	result = a_true;
-	if (is_pr(args)) {
-		first = number_value(hd(args));
-		DBUG_PRINT("first", ("%s", cons_to_str(first)));
-		ENSURE(numberp(first));
-		rest = tl(args);
-		while (is_pr(rest)) {
-			DBUG_PRINT("rest", ("%s", cons_to_str(rest)));
-			n = number_value(hd(rest));
-			ENSURE(numberp(n));
-			if (first != n) {  /* number values can be compared directly */
-				result = a_false;
-				break;
-			}
-			rest = tl(rest);
-		}
-	}
-	DBUG_PRINT("result", ("%s", cons_to_str(result)));
-	SEND(cust, result);
-	DBUG_RETURN;
-}
 
 /**
 LET if_test_beh(cust, cnsq, altn, env) = \bool.[
@@ -3409,6 +3369,134 @@ BEH_DECL(brand_args_beh)
 }
 
 /**
+LET num_eq_args_beh(cust, env) = \args.[ ... ]
+**/
+static
+BEH_DECL(num_eq_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* args = WHAT;
+	CONS* first;
+	CONS* rest;
+	CONS* n;
+	CONS* result;
+
+	DBUG_ENTER("num_eq_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+
+	result = a_true;
+	if (is_pr(args)) {
+		first = number_value(hd(args));
+		DBUG_PRINT("first", ("%s", cons_to_str(first)));
+		ENSURE(numberp(first));
+		rest = tl(args);
+		while (is_pr(rest)) {
+			DBUG_PRINT("rest", ("%s", cons_to_str(rest)));
+			n = number_value(hd(rest));
+			ENSURE(numberp(n));
+			if (first != n) {  /* number values can be compared directly */
+				result = a_false;
+				break;
+			}
+			rest = tl(rest);
+		}
+	}
+	DBUG_PRINT("result", ("%s", cons_to_str(result)));
+	SEND(cust, result);
+	DBUG_RETURN;
+}
+
+/**
+LET num_plus_op = \(p, q).(add(p, q))
+**/
+static CONS*
+num_plus_op(CONS* p, CONS* q)
+{
+	return get_number(NUMBER(MK_INT(p) + MK_INT(q)));
+}
+/**
+LET num_foldl_beh(cust, zero, oplus) = \args.[
+	LET foldl(zero, args) = (
+		CASE args OF
+		(h, t) : foldl(oplus(zero, h), t)
+		_ : zero
+	)
+	SEND foldl(zero, args) TO cust
+	END
+]
+**/
+static
+BEH_DECL(num_foldl_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* args = WHAT;
+	CONS* zero;
+	CONS* oplus;
+	CONS* one;
+
+	DBUG_ENTER("num_foldl_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	zero = get_number(hd(tl(state)));
+	ENSURE(numberp(zero));
+	oplus = tl(tl(state));
+	ENSURE(funcp(oplus));
+	while (is_pr(args)) {
+		DBUG_PRINT("zero", ("%s", cons_to_str(zero)));
+		one = number_value(hd(args));
+		DBUG_PRINT("one", ("%s", cons_to_str(one)));
+		ENSURE(numberp(one));
+		zero = ((LAMBDA_x_y)MK_BEH(oplus))(zero, one);
+		args = tl(args);
+	}
+	DBUG_PRINT("final", ("%s", cons_to_str(zero)));
+	SEND(cust, get_number(zero));
+	DBUG_RETURN;
+}
+/**
+LET num_plus_beh(cust, _) = \args.[
+	LET foldl(n, args) = (
+		CASE args OF
+		(h, t) : foldl(add(n, h), t)
+		_ : n
+	)
+	SEND foldl(0, args) TO cust
+	END
+]
+**/
+static
+BEH_DECL(num_plus_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* args = WHAT;
+	CONS* n;
+	CONS* m;
+
+	DBUG_ENTER("num_plus_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	n = NUMBER(0);
+	while (is_pr(args)) {
+		DBUG_PRINT("n", ("%s", cons_to_str(n)));
+		m = number_value(hd(args));
+		DBUG_PRINT("m", ("%s", cons_to_str(m)));
+		ENSURE(numberp(m));
+		n = NUMBER(MK_INT(n) + MK_INT(m));
+		args = tl(args);
+	}
+	DBUG_PRINT("final", ("%s", cons_to_str(n)));
+	SEND(cust, get_number(n));
+	DBUG_RETURN;
+}
+
+/**
 CREATE sink WITH \_.[]
 
 CREATE Inert WITH unit_type()
@@ -3419,6 +3507,7 @@ CREATE True WITH bool_type(TRUE)
 CREATE False WITH bool_type(FALSE)
 
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
+ground_env("+") = NEW appl_type(NEW args_oper(num_plus_beh))
 ground_env("=?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
@@ -3501,6 +3590,9 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("make-encapsulation-type"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(brand_args_beh))));
+	ground_map = map_put(ground_map, ATOM("+"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(num_plus_beh))));
 	ground_map = map_put(ground_map, ATOM("=?"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(num_eq_args_beh))));
