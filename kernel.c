@@ -3430,52 +3430,71 @@ BEH_DECL(num_eq_args_beh)
 }
 
 /**
-LET num_plus_op = \(p, q).(add(p, q))
-**/
-static CONS*
-num_plus_op(CONS* p, CONS* q)
-{
-	return get_number(NUMBER(MK_INT(p) + MK_INT(q)));
-}
-/**
-LET num_foldl_beh(cust, zero, oplus) = \args.[
-	LET foldl(zero, args) = (
-		CASE args OF
-		(h, t) : foldl(oplus(zero, h), t)
-		_ : zero
-	)
-	SEND foldl(zero, args) TO cust
+LET num_foldl_oper(zero, oplus) = \(cust, req).[
+	CASE req OF
+	(#comb, opnds, env) : [
+		LET foldl(zero, opnds) = (
+			CASE opnds OF
+			(h, t) : foldl(oplus(zero, h), t)
+			_ : zero
+		)
+		SEND foldl(zero, opnds) TO cust
+	]
+	_ : oper_type(cust, req)
+	END
 ]
 **/
 static
-BEH_DECL(num_foldl_beh)
+BEH_DECL(num_foldl_oper)
 {
 	CONS* state = MINE;
-	CONS* cust;
-	CONS* args = WHAT;
 	CONS* zero;
 	CONS* oplus;
-	CONS* one;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
 
-	DBUG_ENTER("num_foldl_beh");
+	DBUG_ENTER("num_foldl_oper");
 	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
-	zero = get_number(hd(tl(state)));
+	zero = hd(state);
 	ENSURE(numberp(zero));
-	oplus = tl(tl(state));
+	oplus = tl(state);
 	ENSURE(funcp(oplus));
-	while (is_pr(args)) {
-		DBUG_PRINT("zero", ("%s", cons_to_str(zero)));
-		one = number_value(hd(args));
-		DBUG_PRINT("one", ("%s", cons_to_str(one)));
-		ENSURE(numberp(one));
-		zero = ((LAMBDA_x_y)MK_BEH(oplus))(zero, one);
-		args = tl(args);
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = cons_value(hd(tl(req)));
+/*		CONS* env = tl(tl(req)); */
+		CONS* one;
+
+		while (is_pr(opnds)) {
+			DBUG_PRINT("zero", ("%s", cons_to_str(zero)));
+			one = number_value(hd(opnds));
+			DBUG_PRINT("one", ("%s", cons_to_str(one)));
+			ENSURE(numberp(one));
+			zero = ((LAMBDA_x_y)MK_BEH(oplus))(zero, one);
+			opnds = cons_value(tl(opnds));
+		}
+		DBUG_PRINT("result", ("%s", cons_to_str(zero)));
+		SEND(cust, get_number(zero));
+	} else {
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
-	DBUG_PRINT("final", ("%s", cons_to_str(zero)));
-	SEND(cust, get_number(zero));
 	DBUG_RETURN;
+}
+/**
+LET num_times_op = \(p, q).(mul(p, q))
+**/
+static CONS*
+num_times_op(CONS* p, CONS* q)
+{
+	return NUMBER(MK_INT(p) * MK_INT(q));
 }
 /**
 LET num_plus_oper = \(cust, req).[
@@ -3544,6 +3563,7 @@ CREATE False WITH bool_type(FALSE)
 
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("+") = NEW appl_type(NEW num_plus_oper)
+ground_env("*") = NEW appl_type(NEW num_foldl_oper(1, num_times_op))
 ground_env("=?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
@@ -3629,6 +3649,9 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("+"),
 		ACTOR(appl_type,
 			ACTOR(num_plus_oper, NIL)));
+	ground_map = map_put(ground_map, ATOM("*"),
+		ACTOR(appl_type,
+			ACTOR(num_foldl_oper, pr(NUMBER(1), MK_FUNC(num_times_op)))));
 	ground_map = map_put(ground_map, ATOM("=?"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(num_eq_args_beh))));
@@ -4439,6 +4462,14 @@ test_kernel()
 	 */
 	expr = read_sexpr(string_source("(+ 2 3 4)"));
 	expect = get_number(NUMBER(9));
+	assert_eval(expr, expect);
+
+	/*
+	 * (* 2 3 4)
+	 * ==> 24
+	 */
+	expr = read_sexpr(string_source("(* 2 3 4)"));
+	expect = get_number(NUMBER(24));
 	assert_eval(expr, expect);
 
 	/*
