@@ -2626,112 +2626,94 @@ BEH_DECL(cons_args_beh)
 }
 
 /**
-LET car_pair_beh(cust) = \pair.[
-	CASE pair OF
-	(h, t) : [ SEND h TO cust ]
-	_ : THROW (#Not-Understood, SELF, pair)
-]
-**/
-static
-BEH_DECL(car_pair_beh)
-{
-	CONS* cust = MINE;
-	CONS* pair = WHAT;
-
-	DBUG_ENTER("car_pair_beh");
-	ENSURE(actorp(cust));
-	if (is_pr(pair)) {
-		SEND(cust, hd(pair));
-	} else {
-		THROW(pr(ATOM("Not-Understood"), pr(SELF, pair)));
-	}
-	DBUG_RETURN;
-}
-/**
 # ($define! car ($lambda ((x . #ignore)) x))
 
-LET car_args_beh(cust, env) = \(pair, NIL).[
-	SEND (k_pair, #as_pair) TO pair
-	CREATE k_pair WITH \pr.[
-		SEND car(pr) TO cust
+LET car_oper = \(cust, req).[
+	CASE req OF
+	(#comb, ((p, _), NIL), env) : [
+		SEND p TO cust
 	]
+	_ : oper_type(cust, req)
+	END
 ]
 **/
 static
-BEH_DECL(car_args_beh)
+BEH_DECL(car_oper)
 {
-	CONS* state = MINE;
-	CONS* cust;
 	CONS* msg = WHAT;
-	CONS* pair;
-	CONS* k_pair;
+	CONS* cust;
+	CONS* req;
 
-	DBUG_ENTER("car_args_beh");
-	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
+	DBUG_ENTER("car_oper");
 	ENSURE(is_pr(msg));
-	pair = hd(msg);
-	ENSURE(nilp(tl(msg)));
-
-	/* FIXME: maybe reach into pair-actor representation directly? */
-	k_pair = ACTOR(car_pair_beh, cust);
-	SEND(pair, pr(k_pair, ATOM("as_pair")));
-	DBUG_RETURN;
-}
-
-/**
-LET cdr_pair_beh(cust) = \pair.[
-	CASE pair OF
-	(h, t) : [ SEND t TO cust ]
-	_ : THROW (#Not-Understood, SELF, pair)
-]
-**/
-static
-BEH_DECL(cdr_pair_beh)
-{
-	CONS* cust = MINE;
-	CONS* pair = WHAT;
-
-	DBUG_ENTER("cdr_pair_beh");
+	cust = hd(msg);
 	ENSURE(actorp(cust));
-	if (is_pr(pair)) {
-		SEND(cust, tl(pair));
+	req = tl(msg);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = hd(tl(req));
+/*		CONS* env = tl(tl(req)); */
+		CONS* p = cons_value(opnds);
+
+		ENSURE(is_pr(p));
+		ENSURE(tl(p) == a_nil);
+		p = cons_value(hd(p));
+		ENSURE(is_pr(p));
+		p = hd(p);  /* car */
+		ENSURE(actorp(p));
+		SEND(cust, p);
 	} else {
-		THROW(pr(ATOM("Not-Understood"), pr(SELF, pair)));
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
 	DBUG_RETURN;
 }
+
 /**
 # ($define! cdr ($lambda ((#ignore . x)) x))
 
-LET cdr_args_beh(cust, env) = \(pair, NIL).[
-	SEND (k_pair, #as_pair) TO pair
-	CREATE k_pair WITH \pr.[
-		SEND cdr(pr) TO cust
+LET cdr_oper = \(cust, req).[
+	CASE req OF
+	(#comb, ((_, p), NIL), env) : [
+		SEND p TO cust
 	]
+	_ : oper_type(cust, req)
+	END
 ]
 **/
 static
-BEH_DECL(cdr_args_beh)
+BEH_DECL(cdr_oper)
 {
-	CONS* state = MINE;
-	CONS* cust;
 	CONS* msg = WHAT;
-	CONS* pair;
-	CONS* k_pair;
+	CONS* cust;
+	CONS* req;
 
-	DBUG_ENTER("cdr_args_beh");
-	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
+	DBUG_ENTER("cdr_oper");
 	ENSURE(is_pr(msg));
-	pair = hd(msg);
-	ENSURE(nilp(tl(msg)));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
 
-	/* FIXME: maybe reach into pair-actor representation directly? */
-	k_pair = ACTOR(cdr_pair_beh, cust);
-	SEND(pair, pr(k_pair, ATOM("as_pair")));
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = hd(tl(req));
+/*		CONS* env = tl(tl(req)); */
+		CONS* p = cons_value(opnds);
+
+		ENSURE(is_pr(p));
+		ENSURE(tl(p) == a_nil);
+		p = cons_value(hd(p));
+		ENSURE(is_pr(p));
+		p = tl(p);  /* cdr */
+		ENSURE(actorp(p));
+		SEND(cust, p);
+	} else {
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
 	DBUG_RETURN;
 }
 
@@ -3530,8 +3512,8 @@ ground_env("set-cdr!") = NEW appl_type(NEW args_oper(set_cdr_args_beh))
 ground_env("newline") = NEW appl_type(NEW args_oper(newline_args_beh))
 ground_env("write") = NEW appl_type(NEW args_oper(write_args_beh))
 ground_env("cons") = NEW appl_type(NEW args_oper(cons_args_beh))
-ground_env("car") = NEW appl_type(NEW args_oper(car_args_beh))
-ground_env("cdr") = NEW appl_type(NEW args_oper(cdr_args_beh))
+ground_env("car") = NEW appl_type(NEW car_oper)
+ground_env("cdr") = NEW appl_type(NEW cdr_oper)
 ground_env("$if") = NEW args_oper(if_args_beh)
 ground_env("eq?") = NEW appl_type(NEW args_oper(eq_args_beh))
 ground_env("$lambda") = NEW lambda_oper
@@ -3643,10 +3625,10 @@ init_kernel()
 			ACTOR(args_oper, MK_FUNC(cons_args_beh))));
 	ground_map = map_put(ground_map, ATOM("car"),
 		ACTOR(appl_type,
-			ACTOR(args_oper, MK_FUNC(car_args_beh))));
+			ACTOR(car_oper, NIL)));
 	ground_map = map_put(ground_map, ATOM("cdr"),
 		ACTOR(appl_type,
-			ACTOR(args_oper, MK_FUNC(cdr_args_beh))));
+			ACTOR(cdr_oper, NIL)));
 	ground_map = map_put(ground_map, ATOM("$if"),
 		ACTOR(args_oper, MK_FUNC(if_args_beh)));
 	ground_map = map_put(ground_map, ATOM("eq?"),
