@@ -3405,46 +3405,6 @@ BEH_DECL(brand_args_beh)
 }
 
 /**
-LET num_eq_args_beh(cust, env) = \args.[ ... ]
-**/
-static
-BEH_DECL(num_eq_args_beh)
-{
-	CONS* state = MINE;
-	CONS* cust;
-	CONS* args = WHAT;
-	CONS* first;
-	CONS* rest;
-	CONS* n;
-	CONS* result;
-
-	DBUG_ENTER("num_eq_args_beh");
-	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
-
-	result = a_true;
-	if (is_pr(args)) {
-		first = number_value(hd(args));
-		DBUG_PRINT("first", ("%s", cons_to_str(first)));
-		ENSURE(numberp(first));
-		rest = tl(args);
-		while (is_pr(rest)) {
-			DBUG_PRINT("rest", ("%s", cons_to_str(rest)));
-			n = number_value(hd(rest));
-			ENSURE(numberp(n));
-			if (first != n) {  /* number values can be compared directly */
-				result = a_false;
-				break;
-			}
-			rest = tl(rest);
-		}
-	}
-	DBUG_PRINT("result", ("%s", cons_to_str(result)));
-	SEND(cust, result);
-	DBUG_RETURN;
-}
-/**
 LET num_rel_oper(rel_op) = \(cust, req).[
 	CASE req OF
 	(#comb, opnds, env) : [
@@ -3613,7 +3573,6 @@ CREATE False WITH bool_type(FALSE)
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("+") = NEW appl_type(NEW num_foldl_oper(0, num_plus_op))
 ground_env("*") = NEW appl_type(NEW num_foldl_oper(1, num_times_op))
-ground_env("num_eq?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
 ground_env("=?") = NEW appl_type(NEW num_rel_oper(num_eq_rel))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
@@ -3702,9 +3661,6 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("*"),
 		ACTOR(appl_type,
 			ACTOR(num_foldl_oper, pr(NUMBER(1), MK_FUNC(num_times_op)))));
-	ground_map = map_put(ground_map, ATOM("num_eq?"),
-		ACTOR(appl_type,
-			ACTOR(args_oper, MK_FUNC(num_eq_args_beh))));
 	ground_map = map_put(ground_map, ATOM("=?"),
 		ACTOR(appl_type,
 			ACTOR(num_rel_oper, MK_FUNC(num_eq_rel))));
