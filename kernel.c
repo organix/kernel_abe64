@@ -3410,6 +3410,85 @@ BEH_DECL(num_eq_args_beh)
 	SEND(cust, result);
 	DBUG_RETURN;
 }
+/**
+LET num_rel_oper(rel_op) = \(cust, req).[
+	CASE req OF
+	(#comb, opnds, env) : [
+		LET foldl(opnds) = (
+			CASE opnds OF
+			(left, (right, more)) : 
+				CASE rel_op(left, right) OF
+				TRUE : foldl(right, more)
+				FALSE : FALSE
+				END
+			_ : TRUE
+		)
+		SEND foldl(opnds) TO cust
+	]
+	_ : oper_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(num_rel_oper)
+{
+	CONS* rel_op = MINE;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("num_rel_oper");
+	ENSURE(funcp(rel_op));
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = cons_value(hd(tl(req)));
+/*		CONS* env = tl(tl(req)); */
+		CONS* result = a_true;
+		CONS* p;
+		CONS* left;
+		CONS* right;
+
+		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
+		while (is_pr(opnds)) {
+			p = cons_value(tl(opnds));
+			DBUG_PRINT("p", ("%s", cons_to_str(p)));
+			if (!is_pr(p)) {
+				break;  /* no more operand pairs */
+			}
+			left = number_value(hd(opnds));
+			DBUG_PRINT("left", ("%s", cons_to_str(left)));
+			ENSURE(numberp(left));
+			right = number_value(hd(p));
+			DBUG_PRINT("right", ("%s", cons_to_str(right)));
+			ENSURE(numberp(right));
+			if (((LAMBDA_x_y)MK_BEH(rel_op))(left, right) == BOOLEAN(FALSE)) {
+				result = a_false;
+				break;
+			}
+			opnds = p;
+		}
+		DBUG_PRINT("result", ("%s", cons_to_str(result)));
+		SEND(cust, result);
+	} else {
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
+/**
+LET num_eq_rel = \(p, q).(eq(p, q))
+**/
+static CONS*
+num_eq_rel(CONS* p, CONS* q)
+{
+	return BOOLEAN(MK_INT(p) == MK_INT(q));
+}
 
 /**
 LET num_foldl_oper(zero, oplus) = \(cust, req).[
@@ -3500,7 +3579,8 @@ CREATE False WITH bool_type(FALSE)
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("+") = NEW appl_type(NEW num_foldl_oper(0, num_plus_op))
 ground_env("*") = NEW appl_type(NEW num_foldl_oper(1, num_times_op))
-ground_env("=?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
+ground_env("num_eq?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
+ground_env("=?") = NEW appl_type(NEW num_rel_oper(num_eq_rel))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
 ground_env("make-environment") = NEW appl_type(NEW args_oper(make_env_args_beh))
@@ -3588,9 +3668,12 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("*"),
 		ACTOR(appl_type,
 			ACTOR(num_foldl_oper, pr(NUMBER(1), MK_FUNC(num_times_op)))));
-	ground_map = map_put(ground_map, ATOM("=?"),
+	ground_map = map_put(ground_map, ATOM("num_eq?"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(num_eq_args_beh))));
+	ground_map = map_put(ground_map, ATOM("=?"),
+		ACTOR(appl_type,
+			ACTOR(num_rel_oper, MK_FUNC(num_eq_rel))));
 	ground_map = map_put(ground_map, ATOM("map"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(map_args_beh))));
