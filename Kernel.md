@@ -135,3 +135,62 @@ newline                              |        |         | x       |
 $concurrent                          |        |         | x       | 
 $parallel                            |        |         |         | x
 Y                                    |        |         |         | x
+
+## Internal Structure
+
+All values in the Kernel language are represented by actors in ABE. This includes numbers, Boolean `TRUE`/`FALSE`, pairs, and `NIL`. The C code implementation of Kernel features has visibility to the ABE-representation of Kernel objects. Several well-known Kernel objects are represented by statically-allocated actors. For example, the Kernel object with external representation `()` is represented at the ABE level by the actor `a_nil`, with behavior `null_type` and state `NIL`.
+
+```
+a_nil
+ |     .---.---.
+ +---> | o | / |
+       .-|-.---.
+         v
+     null_type
+```
+
+The Kernel Boolean constants with external representations `#t` and `#f` are represented at the ABE level by the actors `a_true` and `a_false`, with behavior `bool_type` and state `BOOLEAN(TRUE)`/`BOOLEAN(FALSE).
+
+```
+a_true             a_false
+ |     .---.---.    |     .---.---.
+ +---> | o |-T-|    +---> | o |-F-|
+       .-|-.---.          .-|-.---.
+         v                  v
+     bool_type          bool_type
+```
+
+Kernel pair values are represented at the ABE level by actors with `cons_type` behavior (or `pair_type` if immutable). The `car` and `cdr` of the pair are represented at the ABE level by a CONS cell, held in the state of the pair actor.
+
+```
+pair
+ |     .---.---.
+ +---> | o | o------+
+       .-|-.---.    |
+         v          v
+     cons_type    +---+---+ cdr
+                  | o | o------>
+                  +-|-+---+
+                car |
+                    v
+```
+
+To illustrate a more complex example, the Kernel list with external representations `(1 2)` or `(1 . (2 . ()))`, is represented at the ABE level by a chain of actors.
+
+```
+list                                                        a_nil
+ |     .---.---.                     .---.---.               |     .---.---.
+ +---> | o | o------+          +---> | o | o------+          +---> | o | / |
+       .-|-.---.    |          |     .-|-.---.    |          |     .-|-.---.
+         v          v          |       v          v          |       v
+     cons_type    +---+---+    |   cons_type    +---+---+    |   null_type
+                  | o | o------+                | o | o------+
+                  +-|-+---+                     +-|-+---+
+                    |                             |
+                    v                             v
+                  .---.---.                     .---.---.
+                  | o | 1 |                     | o | 2 |
+                  .-|-.---.                     .-|-.---.
+                    v                             v
+              number_type                   number_type
+```
