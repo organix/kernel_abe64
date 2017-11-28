@@ -1011,7 +1011,7 @@ get_number(CONS* value)
 static CONS*
 number_value(CONS* number)  /* extract ABE numeric value from Kernel number */
 {
-	CONS* n = FALSE;  /* return FALSE if not a number */
+	CONS* n = BOOLEAN(FALSE);  /* return FALSE if not a number */
 
 	DBUG_ENTER("number_value");
 	DBUG_PRINT("number", ("%s", cons_to_str(number)));
@@ -1608,7 +1608,7 @@ BEH_DECL(pair_type)
 static CONS*
 cons_value(CONS* pair)  /* extract ABE CONS value from Kernel Cons/Pair */
 {
-	CONS* p = FALSE;  /* return FALSE if not a pair */
+	CONS* p = BOOLEAN(FALSE);  /* return FALSE if not a pair */
 
 	DBUG_ENTER("cons_value");
 	DBUG_PRINT("pair", ("%s", cons_to_str(pair)));
@@ -3478,42 +3478,6 @@ BEH_DECL(num_foldl_beh)
 	DBUG_RETURN;
 }
 /**
-LET num_plus_beh(cust, _) = \args.[
-	LET foldl(n, args) = (
-		CASE args OF
-		(h, t) : foldl(add(n, h), t)
-		_ : n
-	)
-	SEND foldl(0, args) TO cust
-]
-**/
-static
-BEH_DECL(num_plus_beh)
-{
-	CONS* state = MINE;
-	CONS* cust;
-	CONS* args = WHAT;
-	CONS* n;
-	CONS* m;
-
-	DBUG_ENTER("num_plus_beh");
-	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
-	n = NUMBER(0);
-	while (is_pr(args)) {
-		DBUG_PRINT("n", ("%s", cons_to_str(n)));
-		m = number_value(hd(args));
-		DBUG_PRINT("m", ("%s", cons_to_str(m)));
-		ENSURE(numberp(m));
-		n = NUMBER(MK_INT(n) + MK_INT(m));
-		args = tl(args);
-	}
-	DBUG_PRINT("final", ("%s", cons_to_str(n)));
-	SEND(cust, get_number(n));
-	DBUG_RETURN;
-}
-/**
 LET num_plus_oper = \(cust, req).[
 	CASE req OF
 	(#comb, opnds, env) : [
@@ -3546,7 +3510,7 @@ BEH_DECL(num_plus_oper)
 	if (is_pr(req) && is_pr(tl(req))
 	&& (hd(req) == ATOM("comb"))) {
 		CONS* opnds = hd(tl(req));
-		CONS* env = tl(tl(req));
+/*		CONS* env = tl(tl(req)); */
 		CONS* n;
 		CONS* m;
 
@@ -3579,7 +3543,6 @@ CREATE True WITH bool_type(TRUE)
 CREATE False WITH bool_type(FALSE)
 
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
-# ground_env("sum") = NEW appl_type(NEW args_oper(num_plus_beh))
 ground_env("+") = NEW appl_type(NEW num_plus_oper)
 ground_env("=?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
@@ -3663,9 +3626,6 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("make-encapsulation-type"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(brand_args_beh))));
-	ground_map = map_put(ground_map, ATOM("sum"),
-		ACTOR(appl_type,
-			ACTOR(args_oper, MK_FUNC(num_plus_beh))));
 	ground_map = map_put(ground_map, ATOM("+"),
 		ACTOR(appl_type,
 			ACTOR(num_plus_oper, NIL)));
