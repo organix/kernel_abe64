@@ -149,7 +149,7 @@ a_nil
      null_type
 ```
 
-The Kernel Boolean constants with external representations `#t` and `#f` are represented at the ABE level by the actors `a_true` and `a_false`, with behavior `bool_type` and state `BOOLEAN(TRUE)`/`BOOLEAN(FALSE).
+The Kernel Boolean constants with external representations `#t` and `#f` are represented at the ABE level by the actors `a_true` and `a_false`, with behavior `bool_type` and state `BOOLEAN(TRUE)`/`BOOLEAN(FALSE)`.
 
 ```
 a_true             a_false
