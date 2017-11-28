@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-27";
+static char	_Version[] = "2017-11-28";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -679,11 +679,37 @@ BEH_DECL(oper_type)
 	DBUG_RETURN;
 }
 /**
+LET as_tuple(list) = (
+	CASE list OF
+	(h, t) : cons(h, as_tuple(t))
+	_ : NIL
+	END
+)
+**/
+static CONS*
+as_tuple(CONS* list)
+{
+	DBUG_ENTER("as_tuple");
+	DBUG_PRINT("list", ("%s", cons_to_str(list)));
+	list = cons_value(list);
+	if (is_pr(list)) {
+		CONS* rest = as_tuple(tl(list));
+		if (rest == BOOLEAN(FALSE)) {
+			list = rest;  /* propagate failure */
+		} else {
+			list = pr(hd(list), rest);
+		}
+	}
+	DBUG_PRINT("result", ("%s", cons_to_str(list)));
+	DBUG_RETURN list;
+}
+/**
 LET args_oper(args_beh) = \(cust, req).[
 	CASE req OF
 	(#comb, opnds, env) : [
 		CREATE k_args WITH args_beh(cust, env)
-		SEND (k_args, #as_tuple) TO opnds
+#		SEND (k_args, #as_tuple) TO opnds
+		SEND as_tuple(opnds) TO k_args
 	]
 	_ : oper_type(cust, req)
 	END
@@ -713,7 +739,11 @@ BEH_DECL(args_oper)
 		CONS* k_args;
 
 		k_args = ACTOR((MK_BEH(args_beh)), pr(cust, env));
+#if 0
 		SEND(opnds, pr(k_args, ATOM("as_tuple")));
+#else
+		SEND(k_args, as_tuple(opnds));
+#endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
