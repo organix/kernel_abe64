@@ -100,7 +100,7 @@ symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 number?                              | x      |         | x       | 
 integer?                             | x      |         |         | 
 =?                                   | x      |         | x       | 
-&lt;?                                   | x      |         |         | 
+&lt;?                                   | x      |         | x       | 
 &lt;=?                                  | x      |         |         | 
 &gt;=?                                  | x      |         |         | 
 &gt;?                                   | x      |         |         | 

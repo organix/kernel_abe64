@@ -3483,6 +3483,14 @@ num_eq_rel(CONS* p, CONS* q)
 {
 	return BOOLEAN(MK_INT(p) == MK_INT(q));
 }
+/**
+LET num_lt_rel = \(p, q).(less(p, q))
+**/
+static CONS*
+num_lt_rel(CONS* p, CONS* q)
+{
+	return BOOLEAN(MK_INT(p) < MK_INT(q));
+}
 
 /**
 LET num_foldl_oper(zero, oplus) = \(cust, req).[
@@ -3574,6 +3582,7 @@ ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_b
 ground_env("+") = NEW appl_type(NEW num_foldl_oper(0, num_plus_op))
 ground_env("*") = NEW appl_type(NEW num_foldl_oper(1, num_times_op))
 ground_env("=?") = NEW appl_type(NEW num_rel_oper(num_eq_rel))
+ground_env("<?") = NEW appl_type(NEW num_rel_oper(num_lt_rel))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
 ground_env("$concurrent") = NEW concurrent_oper
 ground_env("make-environment") = NEW appl_type(NEW args_oper(make_env_args_beh))
@@ -3664,6 +3673,9 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("=?"),
 		ACTOR(appl_type,
 			ACTOR(num_rel_oper, MK_FUNC(num_eq_rel))));
+	ground_map = map_put(ground_map, ATOM("<?"),
+		ACTOR(appl_type,
+			ACTOR(num_rel_oper, MK_FUNC(num_lt_rel))));
 	ground_map = map_put(ground_map, ATOM("map"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(map_args_beh))));
