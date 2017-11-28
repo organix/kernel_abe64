@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-26";
+static char	_Version[] = "2017-11-27";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -3489,66 +3489,20 @@ BEH_DECL(num_foldl_oper)
 	DBUG_RETURN;
 }
 /**
+LET num_plus_op = \(p, q).(add(p, q))
+**/
+static CONS*
+num_plus_op(CONS* p, CONS* q)
+{
+	return NUMBER(MK_INT(p) + MK_INT(q));
+}
+/**
 LET num_times_op = \(p, q).(mul(p, q))
 **/
 static CONS*
 num_times_op(CONS* p, CONS* q)
 {
 	return NUMBER(MK_INT(p) * MK_INT(q));
-}
-/**
-LET num_plus_oper = \(cust, req).[
-	CASE req OF
-	(#comb, opnds, env) : [
-		LET foldl(n, opnds) = (
-			CASE opnds OF
-			(h, t) : foldl(add(n, h), t)
-			_ : n
-		)
-		SEND foldl(0, opnds) TO cust
-	]
-	_ : oper_type(cust, req)
-	END
-]
-**/
-static
-BEH_DECL(num_plus_oper)
-{
-	CONS* msg = WHAT;
-	CONS* cust;
-	CONS* req;
-
-	DBUG_ENTER("num_plus_oper");
-	ENSURE(is_pr(msg));
-	cust = hd(msg);
-	ENSURE(actorp(cust));
-	req = tl(msg);
-
-	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
-	DBUG_PRINT("req", ("%s", cons_to_str(req)));
-	if (is_pr(req) && is_pr(tl(req))
-	&& (hd(req) == ATOM("comb"))) {
-		CONS* opnds = hd(tl(req));
-/*		CONS* env = tl(tl(req)); */
-		CONS* n;
-		CONS* m;
-
-		opnds = cons_value(opnds);
-		n = NUMBER(0);
-		while (is_pr(opnds)) {
-			DBUG_PRINT("n", ("%s", cons_to_str(n)));
-			m = number_value(hd(opnds));
-			DBUG_PRINT("m", ("%s", cons_to_str(m)));
-			ENSURE(numberp(m));
-			n = NUMBER(MK_INT(n) + MK_INT(m));
-			opnds = cons_value(tl(opnds));
-		}
-		DBUG_PRINT("final", ("%s", cons_to_str(n)));
-		SEND(cust, get_number(n));
-	} else {
-		oper_type(CFG);  /* DELEGATE BEHAVIOR */
-	}
-	DBUG_RETURN;
 }
 
 /**
@@ -3562,7 +3516,7 @@ CREATE True WITH bool_type(TRUE)
 CREATE False WITH bool_type(FALSE)
 
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
-ground_env("+") = NEW appl_type(NEW num_plus_oper)
+ground_env("+") = NEW appl_type(NEW num_foldl_oper(0, num_plus_op))
 ground_env("*") = NEW appl_type(NEW num_foldl_oper(1, num_times_op))
 ground_env("=?") = NEW appl_type(NEW args_oper(num_eq_args_beh))
 ground_env("map") = NEW appl_type(NEW args_oper(map_args_beh))
@@ -3648,7 +3602,7 @@ init_kernel()
 			ACTOR(args_oper, MK_FUNC(brand_args_beh))));
 	ground_map = map_put(ground_map, ATOM("+"),
 		ACTOR(appl_type,
-			ACTOR(num_plus_oper, NIL)));
+			ACTOR(num_foldl_oper, pr(NUMBER(0), MK_FUNC(num_plus_op)))));
 	ground_map = map_put(ground_map, ATOM("*"),
 		ACTOR(appl_type,
 			ACTOR(num_foldl_oper, pr(NUMBER(1), MK_FUNC(num_times_op)))));
