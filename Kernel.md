@@ -101,9 +101,9 @@ number?                              | x      |         | x       |
 integer?                             | x      |         |         | 
 =?                                   | x      |         | x       | 
 &lt;?                                   | x      |         | x       | 
-&lt;=?                                  | x      |         |         | 
-&gt;=?                                  | x      |         |         | 
-&gt;?                                   | x      |         |         | 
+&lt;=?                                  | x      |         | x       | 
+&gt;=?                                  | x      |         | x       | 
+&gt;?                                   | x      |         | x       | 
 \+                                    | x      |         | x       | 
 \*                                    | x      |         | x       | 
 \-                                    | x      |         |         | 
