@@ -48,6 +48,10 @@ static BEH_DECL(env_type);  /* forward */
 static BEH_DECL(brand_type);  /* forward */
 static BEH_DECL(sealed_type);  /* forward */
 
+/* extract ABE values from Kernel actors */
+static CONS* number_value(CONS* number);  /* forward */
+static CONS* cons_value(CONS* pair);  /* forward */
+
 BOOL
 eq(CONS* x, CONS* y)
 {
