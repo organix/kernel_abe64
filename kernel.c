@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-28";
+static char	_Version[] = "2017-11-29";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -81,6 +81,15 @@ eq(CONS* x, CONS* y)
 	return FALSE;
 }
 
+/*
+($define! equal?
+	($lambda (x y)
+		($if (pair? x)
+			($if (equal? (car x) (car y))
+				(equal? (cdr x) (cdr y))
+				#f)
+			(eq? x y))))
+*/
 BOOL
 eq_now(CONS* x, CONS* y)  /* same value now, even if mutable */
 {
@@ -2517,58 +2526,6 @@ BEH_DECL(lambda_oper)
 }
 
 /**
-LET eq_args_beh(cust, env) = \args.[
-	LET eq* = \rest.(
-		CASE rest OF
-		NIL : True
-		(h, t) : (
-			CASE h OF
-			$first : eq*(t)
-			_ : False
-			END
-		)
-		END
-	)
-	CASE args OF
-	(first, rest) : [ SEND eq*(rest) TO cust ]
-	_ : True
-	END
-]
-**/
-static
-BEH_DECL(eq_args_beh)
-{
-	CONS* state = MINE;
-	CONS* cust;
-	CONS* args = WHAT;
-	CONS* first;
-	CONS* rest;
-	CONS* result;
-
-	DBUG_ENTER("eq_args_beh");
-	ENSURE(is_pr(state));
-	cust = hd(state);
-	ENSURE(actorp(cust));
-
-	result = a_true;
-	if (is_pr(args)) {
-		first = hd(args);
-		DBUG_PRINT("first", ("%s", cons_to_str(first)));
-		rest = tl(args);
-		while (is_pr(rest)) {
-			DBUG_PRINT("rest", ("%s", cons_to_str(rest)));
-			if (!eq(first, hd(rest))) {
-				result = a_false;
-				break;
-			}
-			rest = tl(rest);
-		}
-	}
-	DBUG_PRINT("result", ("%s", cons_to_str(result)));
-	SEND(cust, result);
-	DBUG_RETURN;
-}
-/**
 LET obj_rel_oper(rel_op) = \(cust, req).[
 	CASE req OF
 	(#comb, opnds, env) : [
@@ -2639,15 +2596,6 @@ BEH_DECL(obj_rel_oper)
 	}
 	DBUG_RETURN;
 }
-/*
-($define! equal?
-	($lambda (x y)
-		($if (pair? x)
-			($if (equal? (car x) (car y))
-				(equal? (cdr x) (cdr y))
-				#f)
-			(eq? x y))))
-*/
 
 /**
 LET if_test_beh(cust, cnsq, altn, env) = \bool.[
@@ -3840,7 +3788,7 @@ init_kernel()
 		ACTOR(args_oper, MK_FUNC(if_args_beh)));
 	ground_map = map_put(ground_map, ATOM("eq?"),
 		ACTOR(appl_type,
-			ACTOR(args_oper, MK_FUNC(eq_args_beh))));
+			ACTOR(obj_rel_oper, MK_FUNC(eq))));
 	ground_map = map_put(ground_map, ATOM("equal?"),
 		ACTOR(appl_type,
 			ACTOR(obj_rel_oper, MK_FUNC(eq_now))));
@@ -4547,6 +4495,15 @@ test_kernel()
 	 */
 	expr = read_sexpr(string_source(
 		"(equal? (cons 0 (cons 1 ())) (list 0 1))"));
+	expect = a_true;
+	assert_eval(expr, expect);
+
+	/*
+	 * (eq? (copy-es-immutable (cons 0 1)) (copy-es-immutable (cons 0 1)))
+	 * ==> #t
+	 */
+	expr = read_sexpr(string_source(
+		"(eq? (copy-es-immutable (cons 0 1)) (copy-es-immutable (cons 0 1)))"));
 	expect = a_true;
 	assert_eval(expr, expect);
 

@@ -68,13 +68,6 @@
 ($define! cddddr
 	($lambda ((#ignore . (#ignore . (#ignore . (#ignore . x))))) x))
 ;...
-($define! equal?
-	($lambda (x y)
-		($if (pair? x)
-			($if (equal? (car x) (car y))
-				(equal? (cdr x) (cdr y))
-				#f)
-			(eq? x y))))
 ($define! list*
 	($lambda (head . tail)
 		($if (null? tail)
