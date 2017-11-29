@@ -81,6 +81,20 @@ eq(CONS* x, CONS* y)
 	return FALSE;
 }
 
+BOOL
+eq_now(CONS* x, CONS* y)  /* same value now, even if mutable */
+{
+	if (eq(x, y)) {
+		return TRUE;
+	}
+	x = cons_value(x);
+	y = cons_value(y);
+	if (is_pr(x) && is_pr(y)) {
+		return (eq_now(hd(x), hd(y)) && eq_now(tl(x), tl(y)));
+	}
+	return FALSE;
+}
+
 /**
 throw_beh = \msg.[
 	# report an exception
@@ -2554,6 +2568,77 @@ BEH_DECL(eq_args_beh)
 	SEND(cust, result);
 	DBUG_RETURN;
 }
+/**
+LET obj_rel_oper(rel_op) = \(cust, req).[
+	CASE req OF
+	(#comb, opnds, env) : [
+		LET foldl(opnds) = (
+			CASE opnds OF
+			(left, (right, more)) : 
+				CASE rel_op(left, right) OF
+				TRUE : foldl(right, more)
+				FALSE : FALSE
+				END
+			_ : TRUE
+		)
+		SEND foldl(opnds) TO cust
+	]
+	_ : oper_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(obj_rel_oper)
+{
+	CONS* rel_op = MINE;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("obj_rel_oper");
+	ENSURE(funcp(rel_op));
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = cons_value(hd(tl(req)));
+/*		CONS* env = tl(tl(req)); */
+		CONS* result = a_true;
+		CONS* p;
+		CONS* left;
+		CONS* right;
+
+		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
+		while (is_pr(opnds)) {
+			p = cons_value(tl(opnds));
+			DBUG_PRINT("p", ("%s", cons_to_str(p)));
+			if (!is_pr(p)) {
+				break;  /* no more operand pairs */
+			}
+			left = hd(opnds);
+			DBUG_PRINT("left", ("%s", cons_to_str(left)));
+			ENSURE(actorp(left));
+			right = hd(p);
+			DBUG_PRINT("right", ("%s", cons_to_str(right)));
+			ENSURE(actorp(right));
+			if (((LAMBDA_x_y)MK_BEH(rel_op))(left, right) == BOOLEAN(FALSE)) {
+				result = a_false;
+				break;
+			}
+			opnds = p;
+		}
+		DBUG_PRINT("result", ("%s", cons_to_str(result)));
+		SEND(cust, result);
+	} else {
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
 /*
 ($define! equal?
 	($lambda (x y)
@@ -3625,6 +3710,7 @@ ground_env("car") = NEW appl_type(NEW car_oper)
 ground_env("cdr") = NEW appl_type(NEW cdr_oper)
 ground_env("$if") = NEW args_oper(if_args_beh)
 ground_env("eq?") = NEW appl_type(NEW args_oper(eq_args_beh))
+ground_env("equal?") = NEW appl_type(NEW obj_rel_oper(eq_now))
 ground_env("$lambda") = NEW lambda_oper
 ground_env("unwrap") = NEW appl_type(NEW args_oper(unwrap_args_beh))
 ground_env("wrap") = NEW appl_type(NEW args_oper(wrap_args_beh))
@@ -3755,6 +3841,9 @@ init_kernel()
 	ground_map = map_put(ground_map, ATOM("eq?"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(eq_args_beh))));
+	ground_map = map_put(ground_map, ATOM("equal?"),
+		ACTOR(appl_type,
+			ACTOR(obj_rel_oper, MK_FUNC(eq_now))));
 	ground_map = map_put(ground_map, ATOM("$lambda"),
 		ACTOR(lambda_oper, NIL));
 	ground_map = map_put(ground_map, ATOM("unwrap"),
