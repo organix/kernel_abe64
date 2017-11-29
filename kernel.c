@@ -4542,6 +4542,15 @@ test_kernel()
 	assert_eval(expr, expect);
 
 	/*
+	 * (equal? (cons 0 (cons 1 ())) (list 0 1))
+	 * ==> #t  ; equal?, but not eq?
+	 */
+	expr = read_sexpr(string_source(
+		"(equal? (cons 0 (cons 1 ())) (list 0 1))"));
+	expect = a_true;
+	assert_eval(expr, expect);
+
+	/*
 	 * ($sequence
 	 *		(write (cons (list #t #f #inert #ignore) (cons 0 1)))
 	 *		(newline))
