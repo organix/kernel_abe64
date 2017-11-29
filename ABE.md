@@ -36,9 +36,9 @@ EVENT ---> | o | o-------> message
            +-|-+---+
         SELF |
              v
-           +---+---+ MINE
+           .---.---. MINE
            | o | o-------> state
-           +-|-+---+
+           .-|-.---.
         THIS |
              v
           behavior
