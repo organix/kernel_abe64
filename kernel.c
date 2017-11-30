@@ -13,6 +13,11 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 #include "dbug.h"
 DBUG_UNIT("kernel");
 
+/* performance optimization switches */
+#define	OPT_INLINE_COMB		1
+#define	OPT_AS_TUPLE		1
+#define	OPT_MATCH_PTREE		1
+
 static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
 static BEH_PROTO;	/* ==== GLOBAL ACTOR CONFIGURATION ==== */
@@ -766,10 +771,10 @@ BEH_DECL(args_oper)
 		CONS* k_args;
 
 		k_args = ACTOR((MK_BEH(args_beh)), pr(cust, env));
-#if 0
-		SEND(opnds, pr(k_args, ATOM("as_tuple")));
-#else
+#if OPT_AS_TUPLE
 		SEND(k_args, as_tuple(opnds));
+#else
+		SEND(opnds, pr(k_args, ATOM("as_tuple")));
 #endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
@@ -792,7 +797,7 @@ BEH_DECL(appl_args_beh)
 	CONS* comb;
 	CONS* env;
 	CONS* args = WHAT;
-#if 0
+#if !OPT_INLINE_COMB
 	CONS* expr;
 #endif
 
@@ -808,11 +813,11 @@ BEH_DECL(appl_args_beh)
 	DBUG_PRINT("comb", ("%s", cons_to_str(comb)));
 	DBUG_PRINT("env", ("%s", cons_to_str(env)));
 	DBUG_PRINT("args", ("%s", cons_to_str(args)));
-#if 0
+#if OPT_INLINE_COMB
+	SEND(comb, pr(cust, pr(ATOM("comb"), pr(args, env))));
+#else
 	expr = ACTOR(pair_type, pr(comb, args));
 	SEND(expr, pr(cust, pr(ATOM("eval"), env)));
-#else
-	SEND(comb, pr(cust, pr(ATOM("comb"), pr(args, env))));
 #endif
 	DBUG_RETURN;
 }
@@ -2083,13 +2088,13 @@ BEH_DECL(define_match_beh)
 	ptree = hd(tl(state));
 	env = tl(tl(state));
 
-#if 0
-	SEND(ptree, pr(cust, pr(ATOM("match"), pr(value, env))));
-#else
+#if OPT_MATCH_PTREE
 	value = match_ptree(value, ptree, env);
 	ENSURE(value == a_inert);
 	DBUG_PRINT("env", ("%s", cons_to_str(env)));
 	SEND(cust, value);
+#else
+	SEND(ptree, pr(cust, pr(ATOM("match"), pr(value, env))));
 #endif
 	DBUG_RETURN;
 }
@@ -2282,22 +2287,22 @@ BEH_DECL(vau_type)
 		CONS* d_env = tl(tl(req));
 		CONS* local = ACTOR(env_type, pr(s_env, NIL));
 		CONS* formal = ACTOR(pair_type, pr(opnds, d_env));
-#if 0
-		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
-#else
+#if OPT_MATCH_PTREE
 		CONS* value;
+#else
+		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
 #endif
 
 		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
 		DBUG_PRINT("d_env", ("%s", cons_to_str(d_env)));
-#if 0
-		SEND(ptree, pr(k_eval, pr(ATOM("match"), pr(formal, local))));
-#else
+#if OPT_MATCH_PTREE
 		value = match_ptree(formal, ptree, local);
 		ENSURE(value == a_inert);
 		DBUG_PRINT("local", ("%s", cons_to_str(local)));
 		SEND(body, pr(cust, pr(ATOM("foldl"),
 			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), local))))));
+#else
+		SEND(ptree, pr(k_eval, pr(ATOM("match"), pr(formal, local))));
 #endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
@@ -2518,21 +2523,21 @@ BEH_DECL(lambda_type)
 		CONS* opnds = hd(tl(req));
 		/* CONS* env = tl(tl(req)); -- dynamic environment ignored */
 		CONS* local = ACTOR(env_type, pr(env, NIL));
-#if 0
-		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
-#else
+#if OPT_MATCH_PTREE
 		CONS* value;
+#else
+		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
 #endif
 
 		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
-#if 0
-		SEND(ptree, pr(k_eval, pr(ATOM("match"), pr(opnds, local))));
-#else
+#if OPT_MATCH_PTREE
 		value = match_ptree(opnds, ptree, local);
 		ENSURE(value == a_inert);
 		DBUG_PRINT("local", ("%s", cons_to_str(local)));
 		SEND(body, pr(cust, pr(ATOM("foldl"),
 			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), local))))));
+#else
+		SEND(ptree, pr(k_eval, pr(ATOM("match"), pr(opnds, local))));
 #endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
@@ -3040,7 +3045,8 @@ LET concurrent_oper = \(cust, req).[
 	CASE req OF
 	(#comb, opnds, env) : [
 		CREATE k_args WITH concurrent_args_beh(env)
-		SEND (k_args, #as_tuple) TO opnds
+#		SEND (k_args, #as_tuple) TO opnds
+		SEND as_tuple(opnds) TO k_args
 		SEND Inert TO cust
 	]
 	_ : oper_type(cust, req)
@@ -3069,7 +3075,11 @@ BEH_DECL(concurrent_oper)
 		CONS* k_args;
 
 		k_args = ACTOR(concurrent_args_beh, env);
+#if OPT_AS_TUPLE
+		SEND(k_args, as_tuple(opnds));
+#else
 		SEND(opnds, pr(k_args, ATOM("as_tuple")));
+#endif
 		SEND(cust, a_inert);
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
@@ -3440,7 +3450,8 @@ LET brand_oper(brand, args_beh) = \(cust, req).[
 	CASE req OF
 	(#comb, opnds, env) : [
 		CREATE k_args WITH args_beh(cust, brand)
-		SEND (k_args, #as_tuple) TO opnds
+#		SEND (k_args, #as_tuple) TO opnds
+		SEND as_tuple(opnds) TO k_args
 	]
 	_ : oper_type(cust, req)
 	END
@@ -3476,7 +3487,11 @@ BEH_DECL(brand_oper)
 		CONS* k_args;
 
 		k_args = ACTOR((MK_BEH(args_beh)), pr(cust, brand));
+#if OPT_AS_TUPLE
+		SEND(k_args, as_tuple(opnds));
+#else
 		SEND(opnds, pr(k_args, ATOM("as_tuple")));
+#endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
