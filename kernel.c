@@ -2002,6 +2002,65 @@ BEH_DECL(sequence_oper)
 	DBUG_RETURN;
 }
 
+/*
+ * Match value with ptree, binding variables in env.
+ * Returns a_inert on success, NIL on failure.
+ */
+static CONS*
+match_ptree(CONS* value, CONS* ptree, CONS* env)
+{
+	CONS* p = NIL;  /* default: failure */
+
+	DBUG_ENTER("match_ptree");
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+	DBUG_PRINT("ptree", ("%s", cons_to_str(ptree)));
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	if (ptree == a_ignore) {
+		DBUG_PRINT("match", ("#ignore"));
+		p = a_inert;  /* match nothing */
+	} else if ((ptree == a_nil) && (value == a_nil)) {
+		DBUG_PRINT("match", ("()"));
+		p = a_inert;  /* match () */
+	} else if (actorp(ptree)) {
+		ptree = MK_CONS(ptree);
+		if ((hd(ptree) == MK_FUNC(cons_type))
+		||  (hd(ptree) == MK_FUNC(pair_type))) {
+			ptree = tl(ptree);
+			if (actorp(value)) {
+				value = MK_CONS(value);
+				if ((hd(value) == MK_FUNC(cons_type))
+				||  (hd(value) == MK_FUNC(pair_type))) {
+					value = tl(value);
+					if ((match_ptree(hd(value), hd(ptree), env) == a_inert)
+					&&  (match_ptree(tl(value), tl(ptree), env) == a_inert)) {
+						DBUG_PRINT("match", ("pair"));
+						p = a_inert;  /* match pair */
+					}
+				}
+			}
+		} else if (hd(ptree) == MK_FUNC(symbol_type)) {
+			if (actorp(env)) {
+				env = MK_CONS(env);
+				if (hd(env) == MK_FUNC(env_type)) {
+					CONS* state = tl(env);
+					CONS* map = tl(state);
+					CONS* key = tl(ptree);
+					CONS* binding = map_find(map, key);
+
+					if (nilp(binding)) {
+						rplacd(state, map_put(map, key, value));
+					} else {
+						rplacd(binding, value);
+					}
+					DBUG_PRINT("match", ("symbol %s", cons_to_str(key)));
+					p = a_inert;  /* match symbol */
+				}
+			}
+		}
+	}
+	XDBUG_PRINT("p", ("%s", cons_to_str(p)));
+	DBUG_RETURN p;
+}
 /**
 LET define_match_beh(cust, ptree, env) = \value.[
 	SEND (cust, #match, value, env) TO ptree
@@ -2024,7 +2083,14 @@ BEH_DECL(define_match_beh)
 	ptree = hd(tl(state));
 	env = tl(tl(state));
 
+#if 0
 	SEND(ptree, pr(cust, pr(ATOM("match"), pr(value, env))));
+#else
+	value = match_ptree(value, ptree, env);
+	ENSURE(value == a_inert);
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	SEND(cust, value);
+#endif
 	DBUG_RETURN;
 }
 /**
