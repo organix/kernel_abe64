@@ -194,3 +194,22 @@ list                                                        a_nil
                     v                             v
               number_type                   number_type
 ```
+
+Kernel environments are an encapsulted type which maps symbol names to values. The bindings in an environment are mutable, so different values may be returned at different times. Internally, the environment type stores bindings as an ABE-level map structure. Environments are chained together through their `parent` pointers (terminating with `NIL`). This example binds `x` to the Kernel value `()`, and 'y' to the Kernel value `3`.
+
+```
+                          parent
+                            ^
+env                         |
+ |     .---.---.          +-|-+---+          +---+---+               +---+---+
+ +---> | o | o----------> | o | o----------> | o | o---------------> | o | / |
+       .-|-.---.          +---+---+          +-|-+---+               +-|-+---+
+         v                                     |                       |
+      env_type                                 v                       v
+                                             +---+---+               +---+---+     .---.---.
+                                             | o | o-----> a_nil     | o | o-----> | o | 3 |
+                                             +-|-+---+               +-|-+---+     .-|-.---.
+                                               |                       |             v
+                                               v                       v       number_type
+                                         ATOM("x")               ATOM("y")
+```
