@@ -4,7 +4,7 @@
  * Copyright 2012-2017 Dale Schumacher.  ALL RIGHTS RESERVED.
  */
 static char	_Program[] = "Kernel";
-static char	_Version[] = "2017-11-29";
+static char	_Version[] = "2017-11-30";
 static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 
 #include <getopt.h>
@@ -14,11 +14,11 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 DBUG_UNIT("kernel");
 
 /* performance optimization switches */
-#define	OPT_APPL_UNWRAP		1
-#define	OPT_INLINE_COMB		1
-#define	OPT_AS_TUPLE		1
-#define	OPT_MATCH_PTREE		1
-#define OPT_ENV_MAP			1
+#define	OPT_APPL_UNWRAP		0
+#define	OPT_INLINE_COMB		0
+#define	OPT_AS_TUPLE		0
+#define	OPT_MATCH_PTREE		0
+#define OPT_ENV_MAP			0
 
 static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
@@ -823,25 +823,6 @@ BEH_DECL(appl_args_beh)
 #endif
 	DBUG_RETURN;
 }
-#if OPT_APPL_UNWRAP
-/* extract combiner from applicative */
-static CONS*
-appl_unwrap(CONS* appl)
-{
-	CONS* comb = BOOLEAN(FALSE);  /* default: failure */
-
-	DBUG_ENTER("appl_unwrap");
-	DBUG_PRINT("appl", ("%s", cons_to_str(appl)));
-	if (actorp(appl)) {
-		appl = MK_CONS(appl);
-		if (hd(appl) == MK_FUNC(appl_type)) {
-			comb = tl(appl);
-		}
-	}
-	DBUG_PRINT("comb", ("%s", cons_to_str(comb)));
-	DBUG_RETURN comb;
-}
-#endif
 /**
 LET appl_type(comb) = \(cust, req).[
 	CASE req OF
@@ -899,6 +880,25 @@ BEH_DECL(appl_type)
 	}
 	DBUG_RETURN;
 }
+#if OPT_APPL_UNWRAP
+/* extract combiner from applicative */
+static CONS*
+appl_unwrap(CONS* appl)
+{
+	CONS* comb = BOOLEAN(FALSE);  /* default: failure */
+
+	DBUG_ENTER("appl_unwrap");
+	DBUG_PRINT("appl", ("%s", cons_to_str(appl)));
+	if (actorp(appl)) {
+		appl = MK_CONS(appl);
+		if (hd(appl) == MK_FUNC(appl_type)) {
+			comb = tl(appl);
+		}
+	}
+	DBUG_PRINT("comb", ("%s", cons_to_str(comb)));
+	DBUG_RETURN comb;
+}
+#endif
 
 /**
 LET sealed_type(brand, value) = \(cust, req).[
@@ -1821,44 +1821,6 @@ BEH_DECL(any_type)
 	DBUG_RETURN;
 }
 
-#if OPT_ENV_MAP
-/* extract binding map from environment */
-static CONS*
-env_get_map(CONS* env)
-{
-	CONS* map = BOOLEAN(FALSE);  /* default: failure */
-
-	DBUG_ENTER("env_get_map");
-	DBUG_PRINT("env", ("%s", cons_to_str(env)));
-	if (actorp(env)) {
-		env = MK_CONS(env);
-		if (hd(env) == MK_FUNC(env_type)) {
-			map = tl(tl(env));
-		}
-	}
-	DBUG_PRINT("map", ("%s", cons_to_str(map)));
-	DBUG_RETURN map;
-}
-/* replace binding map in environment */
-static CONS*
-env_set_map(CONS* env, CONS* map)
-{
-	CONS* env_ = BOOLEAN(FALSE);  /* default: failure */
-
-	DBUG_ENTER("env_set_map");
-	DBUG_PRINT("env", ("%s", cons_to_str(env)));
-	DBUG_PRINT("map", ("%s", cons_to_str(map)));
-	if (actorp(env)) {
-		env = MK_CONS(env);
-		if (hd(env) == MK_FUNC(env_type)) {
-			rplacd(tl(env), map);
-			env_ = MK_ACTOR(env);
-		}
-	}
-	DBUG_PRINT("env'", ("%s", cons_to_str(env_)));
-	DBUG_RETURN env_;
-}
-#endif
 /**
 LET env_type(parent, map) = \(cust, req).[
 	CASE req OF
@@ -1952,6 +1914,44 @@ BEH_DECL(env_type)
 	}
 	DBUG_RETURN;
 }
+#if OPT_ENV_MAP
+/* extract binding map from environment */
+static CONS*
+env_get_map(CONS* env)
+{
+	CONS* map = BOOLEAN(FALSE);  /* default: failure */
+
+	DBUG_ENTER("env_get_map");
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	if (actorp(env)) {
+		env = MK_CONS(env);
+		if (hd(env) == MK_FUNC(env_type)) {
+			map = tl(tl(env));
+		}
+	}
+	DBUG_PRINT("map", ("%s", cons_to_str(map)));
+	DBUG_RETURN map;
+}
+/* replace binding map in environment */
+static CONS*
+env_set_map(CONS* env, CONS* map)
+{
+	CONS* env_ = BOOLEAN(FALSE);  /* default: failure */
+
+	DBUG_ENTER("env_set_map");
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	DBUG_PRINT("map", ("%s", cons_to_str(map)));
+	if (actorp(env)) {
+		env = MK_CONS(env);
+		if (hd(env) == MK_FUNC(env_type)) {
+			rplacd(tl(env), map);
+			env_ = MK_ACTOR(env);
+		}
+	}
+	DBUG_PRINT("env'", ("%s", cons_to_str(env_)));
+	DBUG_RETURN env_;
+}
+#endif
 
 /**
 LET make_env_args_beh(cust, env) = \parent.[
