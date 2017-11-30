@@ -16,9 +16,8 @@ DBUG_UNIT("kernel");
 /* performance optimization switches */
 #define	OPT_APPL_UNWRAP		1
 #define	OPT_INLINE_COMB		1
-#define	OPT_AS_TUPLE		0
+#define	OPT_AS_TUPLE		1
 #define	OPT_MATCH_PTREE		0
-#define OPT_ENV_MAP			0
 
 static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
@@ -1916,7 +1915,7 @@ BEH_DECL(env_type)
 	}
 	DBUG_RETURN;
 }
-#if OPT_ENV_MAP
+#if OPT_MATCH_PTREE
 /* extract binding map from environment */
 static CONS*
 env_get_map(CONS* env)
@@ -4732,9 +4731,9 @@ test_kernel()
 	 *			($lambda x 
 	 *				($if (null? x) 
 	 *					#inert 
-	 *					(list (number? (car x)) (apply f (cdr x))))))
-	 *		(car (f 1 2 3)))
-	 * ==> (#t (#t (#t . #inert)))
+	 *					(cons (number? (car x)) (apply f (cdr x))))))
+	 *		(f 1 2 3))
+	 * ==> (#t #t #t . #inert)
 	 */
 	expr = read_sexpr(string_source(
 "($sequence \n\
