@@ -4363,7 +4363,7 @@ BEH_DECL(assert_beh)
 
 	DBUG_ENTER("assert_beh");
 	DBUG_PRINT("", ("expect=%s", cons_to_str(expect)));
-	if (eq(expect, actual)) {
+	if (eq_now(expect, actual)) {
 		BECOME(abort_beh, NIL);
 	} else {
 		DBUG_PRINT("", ("actual=%s", cons_to_str(actual)));
@@ -4560,7 +4560,6 @@ test_kernel()
 	 * (list #t #f)
 	 * ==> (#t #f)
 	 */
-#if 0
 	expect = ACTOR(pair_type, pr(
 		a_true,
 		ACTOR(pair_type, pr(
@@ -4570,8 +4569,6 @@ test_kernel()
 		get_symbol(ATOM("list")),
 		expect));
 	assert_eval(expr, expect);
-	/* FIXME: can't compare list contents because different actors are never equal */
-#endif
 
 	/*
 	 * (($vau (x) #ignore x) y)
@@ -4737,7 +4734,7 @@ test_kernel()
 	 *					#inert 
 	 *					(list (number? (car x)) (apply f (cdr x))))))
 	 *		(car (f 1 2 3)))
-	 * ==> #inert
+	 * ==> (#t (#t (#t . #inert)))
 	 */
 	expr = read_sexpr(string_source(
 "($sequence \n\
@@ -4745,10 +4742,16 @@ test_kernel()
 		($lambda x \n\
 			($if (null? x) \n\
 				#inert \n\
-				(list (number? (car x)) (apply f (cdr x)))))) \n\
-	(car (f 1 2 3)))"
+				(cons (number? (car x)) (apply f (cdr x)))))) \n\
+	(f 1 2 3))"
 ));
-	expect = a_true;
+	expect = ACTOR(pair_type, pr(
+		a_true,
+		ACTOR(pair_type, pr(
+			a_true,
+			ACTOR(pair_type, pr(
+				a_true,
+				a_inert))))));
 	assert_eval(expr, expect);
 
 	/*
