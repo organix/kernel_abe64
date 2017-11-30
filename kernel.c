@@ -2282,11 +2282,23 @@ BEH_DECL(vau_type)
 		CONS* d_env = tl(tl(req));
 		CONS* local = ACTOR(env_type, pr(s_env, NIL));
 		CONS* formal = ACTOR(pair_type, pr(opnds, d_env));
+#if 0
 		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
+#else
+		CONS* value;
+#endif
 
 		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
 		DBUG_PRINT("d_env", ("%s", cons_to_str(d_env)));
+#if 0
 		SEND(ptree, pr(k_eval, pr(ATOM("match"), pr(formal, local))));
+#else
+		value = match_ptree(formal, ptree, local);
+		ENSURE(value == a_inert);
+		DBUG_PRINT("local", ("%s", cons_to_str(local)));
+		SEND(body, pr(cust, pr(ATOM("foldl"),
+			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), local))))));
+#endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
@@ -2506,10 +2518,22 @@ BEH_DECL(lambda_type)
 		CONS* opnds = hd(tl(req));
 		/* CONS* env = tl(tl(req)); -- dynamic environment ignored */
 		CONS* local = ACTOR(env_type, pr(env, NIL));
+#if 0
 		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
+#else
+		CONS* value;
+#endif
 
 		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
+#if 0
 		SEND(ptree, pr(k_eval, pr(ATOM("match"), pr(opnds, local))));
+#else
+		value = match_ptree(opnds, ptree, local);
+		ENSURE(value == a_inert);
+		DBUG_PRINT("local", ("%s", cons_to_str(local)));
+		SEND(body, pr(cust, pr(ATOM("foldl"),
+			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), local))))));
+#endif
 	} else {
 		oper_type(CFG);  /* DELEGATE BEHAVIOR */
 	}
