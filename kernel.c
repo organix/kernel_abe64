@@ -14,6 +14,7 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 DBUG_UNIT("kernel");
 
 /* performance optimization switches */
+#define	OPT_APPL_UNWRAP		1
 #define	OPT_INLINE_COMB		1
 #define	OPT_AS_TUPLE		1
 #define	OPT_MATCH_PTREE		1
@@ -821,6 +822,25 @@ BEH_DECL(appl_args_beh)
 #endif
 	DBUG_RETURN;
 }
+#if OPT_APPL_UNWRAP
+/* extract combiner from applicative */
+static CONS*
+appl_unwrap(CONS* appl)
+{
+	CONS* comb = BOOLEAN(FALSE);  /* default: failure */
+
+	DBUG_ENTER("appl_unwrap");
+	DBUG_PRINT("appl", ("%s", cons_to_str(appl)));
+	if (actorp(appl)) {
+		appl = MK_CONS(appl);
+		if (hd(appl) == MK_FUNC(appl_type)) {
+			comb = tl(appl);
+		}
+	}
+	DBUG_PRINT("comb", ("%s", cons_to_str(comb)));
+	DBUG_RETURN comb;
+}
+#endif
 /**
 LET appl_type(comb) = \(cust, req).[
 	CASE req OF
@@ -2208,8 +2228,13 @@ BEH_DECL(apply_args_beh)
 		env = hd(env);
 	}
 	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+#if OPT_APPL_UNWRAP
+	k_comb = appl_unwrap(appl);
+	SEND(k_comb, pr(cust, pr(ATOM("comb"), pr(args, env))));
+#else
 	k_comb = ACTOR(pair_comb_beh, pr(cust, pr(args, env)));
 	SEND(appl, pr(k_comb, ATOM("unwrap")));
+#endif
 	DBUG_RETURN;
 }
 
@@ -2454,7 +2479,8 @@ BEH_DECL(wrap_args_beh)
 
 /**
 LET unwrap_args_beh(cust, env) = \(appl, NIL).[
-	SEND (cust, #unwrap) TO appl
+#	SEND (cust, #unwrap) TO appl
+	SEND appl_unwrap(appl) TO cust
 ]
 **/
 static
@@ -2464,6 +2490,9 @@ BEH_DECL(unwrap_args_beh)
 	CONS* cust;
 	CONS* msg = WHAT;
 	CONS* appl;
+#if OPT_APPL_UNWRAP
+	CONS* comb;
+#endif
 
 	DBUG_ENTER("unwrap_args_beh");
 	ENSURE(is_pr(state));
@@ -2473,7 +2502,13 @@ BEH_DECL(unwrap_args_beh)
 	appl = hd(msg);
 	ENSURE(nilp(tl(msg)));
 
+#if OPT_APPL_UNWRAP
+	comb = appl_unwrap(appl);
+	ENSURE(actorp(comb));
+	SEND(cust, comb);
+#else
 	SEND(appl, pr(cust, ATOM("unwrap")));
+#endif
 	DBUG_RETURN;
 }
 
@@ -3383,7 +3418,7 @@ BEH_DECL(map_args_beh)
 	lists = tl(msg);
 	ENSURE(is_pr(lists));  /* require at least one list */
 
-	SEND(appl, pr(SELF, ATOM("unwrap")));
+	SEND(appl, pr(SELF, ATOM("unwrap")));  /* FIXME: use appl_unwrap() instead */
 	BECOME(map_unwrap_beh, pr(mk_heads(CFG, lists), cust_env));
 	DBUG_RETURN;
 }
