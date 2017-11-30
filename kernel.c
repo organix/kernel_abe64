@@ -14,8 +14,8 @@ static char	_Copyright[] = "Copyright 2012-2017 Dale Schumacher";
 DBUG_UNIT("kernel");
 
 /* performance optimization switches */
-#define	OPT_APPL_UNWRAP		0
-#define	OPT_INLINE_COMB		0
+#define	OPT_APPL_UNWRAP		1
+#define	OPT_INLINE_COMB		1
 #define	OPT_AS_TUPLE		0
 #define	OPT_MATCH_PTREE		0
 #define OPT_ENV_MAP			0
@@ -712,6 +712,7 @@ BEH_DECL(oper_type)
 	}
 	DBUG_RETURN;
 }
+#if OPT_AS_TUPLE
 /**
 LET as_tuple(list) = (
 	CASE list OF
@@ -737,6 +738,7 @@ as_tuple(CONS* list)
 	DBUG_PRINT("result", ("%s", cons_to_str(list)));
 	DBUG_RETURN list;
 }
+#endif
 /**
 LET args_oper(args_beh) = \(cust, req).[
 	CASE req OF
@@ -2066,6 +2068,7 @@ BEH_DECL(sequence_oper)
 	DBUG_RETURN;
 }
 
+#if OPT_MATCH_PTREE
 /*
  * Match value with ptree, binding variables in env.
  * Returns a_inert on success, NIL on failure.
@@ -2125,6 +2128,7 @@ match_ptree(CONS* value, CONS* ptree, CONS* env)
 	XDBUG_PRINT("p", ("%s", cons_to_str(p)));
 	DBUG_RETURN p;
 }
+#endif
 /**
 LET define_match_beh(cust, ptree, env) = \value.[
 	SEND (cust, #match, value, env) TO ptree
