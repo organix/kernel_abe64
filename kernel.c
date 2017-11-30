@@ -18,6 +18,7 @@ DBUG_UNIT("kernel");
 #define	OPT_INLINE_COMB		1
 #define	OPT_AS_TUPLE		1
 #define	OPT_MATCH_PTREE		1
+#define OPT_ENV_MAP			1
 
 static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
@@ -1820,6 +1821,44 @@ BEH_DECL(any_type)
 	DBUG_RETURN;
 }
 
+#if OPT_ENV_MAP
+/* extract binding map from environment */
+static CONS*
+env_get_map(CONS* env)
+{
+	CONS* map = BOOLEAN(FALSE);  /* default: failure */
+
+	DBUG_ENTER("env_get_map");
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	if (actorp(env)) {
+		env = MK_CONS(env);
+		if (hd(env) == MK_FUNC(env_type)) {
+			map = tl(tl(env));
+		}
+	}
+	DBUG_PRINT("map", ("%s", cons_to_str(map)));
+	DBUG_RETURN map;
+}
+/* replace binding map in environment */
+static CONS*
+env_set_map(CONS* env, CONS* map)
+{
+	CONS* env_ = BOOLEAN(FALSE);  /* default: failure */
+
+	DBUG_ENTER("env_set_map");
+	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	DBUG_PRINT("map", ("%s", cons_to_str(map)));
+	if (actorp(env)) {
+		env = MK_CONS(env);
+		if (hd(env) == MK_FUNC(env_type)) {
+			rplacd(tl(env), map);
+			env_ = MK_ACTOR(env);
+		}
+	}
+	DBUG_PRINT("env'", ("%s", cons_to_str(env_)));
+	DBUG_RETURN env_;
+}
+#endif
 /**
 LET env_type(parent, map) = \(cust, req).[
 	CASE req OF
