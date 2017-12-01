@@ -134,6 +134,7 @@ symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 newline                              |        |         | x       | 
 $concurrent                          |        |         | x       | 
 $parallel                            |        |         |         | x
+time-now                             |        |         | x       | 
 Y                                    |        |         |         | x
 
 ## Internal Structure
