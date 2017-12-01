@@ -3906,6 +3906,80 @@ BEH_DECL(time_args_beh)
 	SEND(cust, now);
 	DBUG_RETURN;
 }
+/* Determine elapsed time between raw time values, as an ABE number */
+static CONS*
+time_diff(CONS* start, CONS* end)
+{
+	long dt = 0;
+
+	dt += MK_INT(map_get_def(end, ATOM("s"), NUMBER(0)));
+	dt -= MK_INT(map_get_def(start, ATOM("s"), NUMBER(0)));
+	dt *= TICK_FREQ;
+	dt += MK_INT(map_get_def(end, ATOM("us"), NUMBER(0)));
+	dt -= MK_INT(map_get_def(start, ATOM("us"), NUMBER(0)));
+	return NUMBER((int)dt);
+}
+/**
+LET timed_cust_beh(cust, start) = \final.[
+	SEND time_diff(start, NOW) TO cust
+]
+**/
+static
+BEH_DECL(timed_cust_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+	CONS* start;
+
+	DBUG_ENTER("timed_cust_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+	start = tl(state);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	SEND(cust, get_number(time_diff(start, NOW)));
+	DBUG_RETURN;
+}
+/**
+LET timed_oper = \(cust, req).[  # derived from sequence_oper
+	CASE req OF
+	(#comb, opnds, env) : [
+		CREATE k_timed WITH timed_cust_beh(cust, NOW);
+		SEND (k_timed, #foldl, Inert, (\(x,y).y), #eval, env) TO opnds
+	]
+	_ : oper_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(timed_oper)
+{
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("timed_oper");
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req) && is_pr(tl(req))
+	&& (hd(req) == ATOM("comb"))) {
+		CONS* opnds = hd(tl(req));
+		CONS* env = tl(tl(req));
+		CONS* k_timed = ACTOR(timed_cust_beh, pr(cust, NOW));
+
+		SEND(opnds, pr(k_timed, pr(ATOM("foldl"),
+			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), env))))));
+	} else {
+		oper_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
 
 
 /**
@@ -3918,6 +3992,7 @@ CREATE Ignore WITH any_type()
 CREATE True WITH bool_type(TRUE)
 CREATE False WITH bool_type(FALSE)
 
+ground_env("$timed") = NEW timed_oper
 ground_env("time-now") = NEW appl_type(NEW args_oper(time_args_beh))
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("+") = NEW appl_type(NEW num_foldl_oper(0, num_plus_op))
@@ -4006,6 +4081,8 @@ init_kernel()
 	a_false = get_const(FALSE);
 #endif
 
+	ground_map = map_put(ground_map, ATOM("$timed"),
+		ACTOR(timed_oper, NIL));
 	ground_map = map_put(ground_map, ATOM("time-now"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(time_args_beh))));

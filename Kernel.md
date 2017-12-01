@@ -135,6 +135,7 @@ newline                              |        |         | x       |
 $concurrent                          |        |         | x       | 
 $parallel                            |        |         |         | x
 time-now                             |        |         | x       | 
+$timed                               |        |         | x       | 
 Y                                    |        |         |         | x
 
 ## Internal Structure
