@@ -17,7 +17,7 @@ DBUG_UNIT("kernel");
 #define	OPT_APPL_UNWRAP		1
 #define	OPT_INLINE_COMB		1
 #define	OPT_AS_TUPLE		1
-#define	OPT_MATCH_PTREE		0
+#define	OPT_MATCH_PTREE		1
 
 static int M_limit = 1000 * 1000;  /* actor messaging dispatch limit */
 
@@ -2069,24 +2069,25 @@ BEH_DECL(sequence_oper)
 
 #if OPT_MATCH_PTREE
 /*
- * Match value with ptree, binding variables in env.
- * Returns a_inert on success, NIL on failure.
+ * Match value with ptree, binding variables in map.
+ * If rebind == TRUE, allow rebinding of symbols.
+ * Returns new map on success, FALSE on failure.
  */
 static CONS*
-match_ptree(CONS* value, CONS* ptree, CONS* env)
+match_ptree(CONS* value, CONS* ptree, CONS* map, BOOL rebind)
 {
-	CONS* p = NIL;  /* default: failure */
+	CONS* p = BOOLEAN(FALSE);  /* default: failure */
 
 	DBUG_ENTER("match_ptree");
 	DBUG_PRINT("value", ("%s", cons_to_str(value)));
 	DBUG_PRINT("ptree", ("%s", cons_to_str(ptree)));
-	DBUG_PRINT("env", ("%s", cons_to_str(env)));
+	DBUG_PRINT("map", ("%s", cons_to_str(map)));
 	if (ptree == a_ignore) {
 		DBUG_PRINT("match", ("#ignore"));
-		p = a_inert;  /* match nothing */
+		p = map;  /* match nothing */
 	} else if ((ptree == a_nil) && (value == a_nil)) {
 		DBUG_PRINT("match", ("()"));
-		p = a_inert;  /* match () */
+		p = map;  /* match () */
 	} else if (actorp(ptree)) {
 		ptree = MK_CONS(ptree);
 		if ((hd(ptree) == MK_FUNC(cons_type))
@@ -2097,30 +2098,28 @@ match_ptree(CONS* value, CONS* ptree, CONS* env)
 				if ((hd(value) == MK_FUNC(cons_type))
 				||  (hd(value) == MK_FUNC(pair_type))) {
 					value = tl(value);
-					if ((match_ptree(hd(value), hd(ptree), env) == a_inert)
-					&&  (match_ptree(tl(value), tl(ptree), env) == a_inert)) {
-						DBUG_PRINT("match", ("pair"));
-						p = a_inert;  /* match pair */
+					map = match_ptree(hd(value), hd(ptree), map, rebind);
+					if (map) {
+						map = match_ptree(tl(value), tl(ptree), map, rebind);
+						if (map) {
+							DBUG_PRINT("match", ("pair"));
+							p = map;  /* match pair */
+						}
 					}
 				}
 			}
 		} else if (hd(ptree) == MK_FUNC(symbol_type)) {
-			if (actorp(env)) {
-				env = MK_CONS(env);
-				if (hd(env) == MK_FUNC(env_type)) {
-					CONS* state = tl(env);
-					CONS* map = tl(state);
-					CONS* key = tl(ptree);
-					CONS* binding = map_find(map, key);
+			CONS* key = tl(ptree);
+			CONS* binding = map_find(map, key);
 
-					if (nilp(binding)) {
-						rplacd(state, map_put(map, key, value));
-					} else {
-						rplacd(binding, value);
-					}
-					DBUG_PRINT("match", ("symbol %s", cons_to_str(key)));
-					p = a_inert;  /* match symbol */
-				}
+			if (nilp(binding)) {
+				map = map_put(map, key, value);
+				DBUG_PRINT("match", ("bind %s", cons_to_str(key)));
+				p = map;  /* match and bind symbol */
+			} else if (rebind) {
+				rplacd(binding, value);
+				DBUG_PRINT("match", ("rebind %s", cons_to_str(key)));
+				p = map;  /* match and rebind symbol */
 			}
 		}
 	}
@@ -2141,6 +2140,9 @@ BEH_DECL(define_match_beh)
 	CONS* ptree;
 	CONS* env;
 	CONS* value = WHAT;
+#if OPT_MATCH_PTREE
+	CONS* map;
+#endif
 
 	DBUG_ENTER("define_match_beh");
 	ENSURE(is_pr(state));
@@ -2151,10 +2153,13 @@ BEH_DECL(define_match_beh)
 	env = tl(tl(state));
 
 #if OPT_MATCH_PTREE
-	value = match_ptree(value, ptree, env);
-	ENSURE(value == a_inert);
+	map = env_get_map(env);
+	ENSURE(consp(map));  /* reminder: consp(NIL) == TRUE */
+	map = match_ptree(value, ptree, map, TRUE);
+	ENSURE(consp(map));
+	env_set_map(env, map);
 	DBUG_PRINT("env", ("%s", cons_to_str(env)));
-	SEND(cust, value);
+	SEND(cust, a_inert);
 #else
 	SEND(ptree, pr(cust, pr(ATOM("match"), pr(value, env))));
 #endif
@@ -2280,6 +2285,7 @@ BEH_DECL(apply_args_beh)
 	DBUG_RETURN;
 }
 
+#if !OPT_MATCH_PTREE
 /**
 LET eval_sequence_beh(cust, body, env) = \$Inert.[  # eval_sequence_beh
 	SEND (cust, #foldl, Inert, (\(x,y).y), #eval, env) TO body
@@ -2306,6 +2312,7 @@ BEH_DECL(eval_sequence_beh)
 		pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), env))))));
 	DBUG_RETURN;
 }
+#endif
 /**
 LET vau_type(ptree, body, s_env) = \(cust, req).[
 	CASE req OF
@@ -2355,7 +2362,7 @@ BEH_DECL(vau_type)
 		CONS* local = ACTOR(env_type, pr(s_env, NIL));
 		CONS* formal = ACTOR(pair_type, pr(opnds, d_env));
 #if OPT_MATCH_PTREE
-		CONS* value;
+		CONS* map;
 #else
 		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
 #endif
@@ -2363,8 +2370,11 @@ BEH_DECL(vau_type)
 		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
 		DBUG_PRINT("d_env", ("%s", cons_to_str(d_env)));
 #if OPT_MATCH_PTREE
-		value = match_ptree(formal, ptree, local);
-		ENSURE(value == a_inert);
+		map = env_get_map(local);
+		ENSURE(consp(map));  /* reminder: consp(NIL) == TRUE */
+		map = match_ptree(formal, ptree, map, FALSE);
+		ENSURE(consp(map));
+		env_set_map(local, map);
 		DBUG_PRINT("local", ("%s", cons_to_str(local)));
 		SEND(body, pr(cust, pr(ATOM("foldl"),
 			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), local))))));
@@ -2601,15 +2611,18 @@ BEH_DECL(lambda_type)
 		/* CONS* env = tl(tl(req)); -- dynamic environment ignored */
 		CONS* local = ACTOR(env_type, pr(env, NIL));
 #if OPT_MATCH_PTREE
-		CONS* value;
+		CONS* map;
 #else
 		CONS* k_eval = ACTOR(eval_sequence_beh, pr(cust, pr(body, local)));
 #endif
 
 		DBUG_PRINT("opnds", ("%s", cons_to_str(opnds)));
 #if OPT_MATCH_PTREE
-		value = match_ptree(opnds, ptree, local);
-		ENSURE(value == a_inert);
+		map = env_get_map(local);
+		ENSURE(consp(map));  /* reminder: consp(NIL) == TRUE */
+		map = match_ptree(opnds, ptree, map, FALSE);
+		ENSURE(consp(map));
+		env_set_map(local, map);
 		DBUG_PRINT("local", ("%s", cons_to_str(local)));
 		SEND(body, pr(cust, pr(ATOM("foldl"),
 			pr(a_inert, pr(MK_FUNC(pair_tail), pr(ATOM("eval"), local))))));
