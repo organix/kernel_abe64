@@ -3821,6 +3821,94 @@ num_times_op(CONS* p, CONS* q)
 }
 
 /**
+LET time_type(time) = \(cust, req).[
+	CASE req OF
+	(#type_eq, $time_type) : [ SEND True TO cust ]
+	(#type_eq, _) : [ SEND False TO cust ]
+	#value : [ SEND time TO cust ]
+	#write : [ SEND (cust, printable(time)) TO current_sink ]
+	_ : const_type(cust, req)
+	END
+]
+**/
+static
+BEH_DECL(time_type)
+{
+	CONS* value = MINE;
+	CONS* msg = WHAT;
+	CONS* cust;
+	CONS* req;
+
+	DBUG_ENTER("time_type");
+	ENSURE(is_pr(msg));
+	cust = hd(msg);
+	ENSURE(actorp(cust));
+	req = tl(msg);
+
+	DBUG_PRINT("value", ("%s", cons_to_str(value)));
+	DBUG_PRINT("cust", ("%s", cons_to_str(cust)));
+	DBUG_PRINT("req", ("%s", cons_to_str(req)));
+	if (is_pr(req)
+	&& (hd(req) == ATOM("type_eq"))) {
+		SEND(cust, ((tl(req) == MK_REF(time_type)) ? a_true : a_false));
+	} else if (req == ATOM("write")) {
+		CONS* result = a_false;
+		SINK* sink = current_sink;
+		char* s;
+		CONS* r;
+
+		r = (sink->put_cstr)(sink, "#time<");
+		if (r == a_true) {
+			s = printable(map_get_def(value, ATOM("s"), NUMBER(0)));
+			r = (sink->put_cstr)(sink, s);
+			FREE(s);
+			if (r == a_true) {
+				r = (sink->put)(sink, NUMBER(','));
+				if (r == a_true) {
+					s = printable(map_get_def(value, ATOM("us"), NUMBER(0)));
+					r = (sink->put_cstr)(sink, s);
+					FREE(s);
+					if (r == a_true) {
+						result = (sink->put)(sink, NUMBER('>'));
+					}
+				}
+			}
+		}
+		SEND(cust, result);
+	} else {
+		const_type(CFG);  /* DELEGATE BEHAVIOR */
+	}
+	DBUG_RETURN;
+}
+/**
+LET time_args_beh(cust, env) = \NIL.[  # no arguments
+	CREATE now WITH time_type(NOW)
+	SEND now TO cust
+]
+**/
+static
+BEH_DECL(time_args_beh)
+{
+	CONS* state = MINE;
+	CONS* cust;
+/*	CONS* env; */
+	CONS* now;
+
+	DBUG_ENTER("time_args_beh");
+	ENSURE(is_pr(state));
+	cust = hd(state);
+	ENSURE(actorp(cust));
+/*	env = tl(state); */
+	ENSURE(nilp(WHAT));
+
+	now = ACTOR(time_type, NOW);
+	DBUG_PRINT("now", ("%s", cons_to_str(now)));
+	SEND(cust, now);
+	DBUG_RETURN;
+}
+
+
+/**
 CREATE sink WITH \_.[]
 
 CREATE Inert WITH unit_type()
@@ -3830,6 +3918,7 @@ CREATE Ignore WITH any_type()
 CREATE True WITH bool_type(TRUE)
 CREATE False WITH bool_type(FALSE)
 
+ground_env("time-now") = NEW appl_type(NEW args_oper(time_args_beh))
 ground_env("make-encapsulation-type") = NEW appl_type(NEW args_oper(brand_args_beh))
 ground_env("+") = NEW appl_type(NEW num_foldl_oper(0, num_plus_op))
 ground_env("*") = NEW appl_type(NEW num_foldl_oper(1, num_times_op))
@@ -3917,6 +4006,9 @@ init_kernel()
 	a_false = get_const(FALSE);
 #endif
 
+	ground_map = map_put(ground_map, ATOM("time-now"),
+		ACTOR(appl_type,
+			ACTOR(args_oper, MK_FUNC(time_args_beh))));
 	ground_map = map_put(ground_map, ATOM("make-encapsulation-type"),
 		ACTOR(appl_type,
 			ACTOR(args_oper, MK_FUNC(brand_args_beh))));
