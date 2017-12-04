@@ -106,7 +106,7 @@ integer?                             | x      |         |         |
 &gt;?                                   | x      |         | x       | 
 \+                                    | x      |         | x       | 
 \*                                    | x      |         | x       | 
-\-                                    | x      |         |         | 
+\-                                    | x      |         |         | x
 zero?                                | x      |         |         | 
 div                                  | x      |         |         | 
 mod                                  | x      |         |         | 

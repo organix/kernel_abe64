@@ -122,6 +122,12 @@
 				(list* $sequence body)
 				(list* list symbols)))
 			env)))
+($define! -
+	($vau (first . rest) env
+		(eval (list + first 
+			(list * -1 
+				(cons + rest)))
+			env)))
 
 ;;;
 ;;; Concurrency
