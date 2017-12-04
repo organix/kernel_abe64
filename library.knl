@@ -140,3 +140,15 @@
 			($lambda (h) 
 				($lambda (x) 
 					((f (h h)) x))))))
+
+;;;
+;;; Factorial example
+;;;
+
+($sequence
+	($define! factorial
+		($lambda (n)
+			($if (<=? n 1)
+				1
+				(* n (factorial (+ n -1))))))
+	(factorial 5))
