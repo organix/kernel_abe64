@@ -122,6 +122,7 @@
 				(list* $sequence body)
 				(list* list symbols)))
 			env)))
+($define! integer? number?)  ; integers are currently the only number type implemented
 ($define! -
 	($vau (first . rest) env
 		(eval (list + first 
