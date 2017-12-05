@@ -98,7 +98,7 @@ memoize                              | x      |         |         |
 symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 -------------------------------------|--------|---------|---------|------------
 number?                              | x      |         | x       | 
-integer?                             | x      |         |         | 
+integer?                             | x      |         |         | x
 =?                                   | x      |         | x       | 
 &lt;?                                   | x      |         | x       | 
 &lt;=?                                  | x      |         | x       | 
@@ -107,7 +107,7 @@ integer?                             | x      |         |         |
 \+                                    | x      |         | x       | 
 \*                                    | x      |         | x       | 
 \-                                    | x      |         |         | x
-zero?                                | x      |         |         | 
+zero?                                | x      |         |         | x
 div                                  | x      |         |         | 
 mod                                  | x      |         |         | 
 div-and-mod                          | x      |         |         | 
