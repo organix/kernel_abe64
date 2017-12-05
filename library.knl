@@ -122,6 +122,7 @@
 				(list* $sequence body)
 				(list* list symbols)))
 			env)))
+; Section 12
 ($define! integer? number?)  ; integers are currently the only number type implemented
 ($define! -
 	($vau (first . rest) env
@@ -129,6 +130,9 @@
 			(list * -1 
 				(cons + rest)))
 			env)))
+($define! zero?
+	($vau args env
+		(eval (list* =? 0 args) env)))
 
 ;;;
 ;;; Concurrency
