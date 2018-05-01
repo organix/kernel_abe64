@@ -100,13 +100,13 @@ symbol                    | R<sup>-1</sup>RK  | Humus   | abe64   | library
 number?                              | x      |         | x       | 
 integer?                             | x      |         |         | x
 =?                                   | x      |         | x       | 
-&lt;?                                   | x      |         | x       | 
-&lt;=?                                  | x      |         | x       | 
-&gt;=?                                  | x      |         | x       | 
-&gt;?                                   | x      |         | x       | 
-\+                                    | x      |         | x       | 
-\*                                    | x      |         | x       | 
-\-                                    | x      |         |         | x
+&lt;?                                | x      |         | x       | 
+&lt;=?                               | x      |         | x       | 
+&gt;=?                               | x      |         | x       | 
+&gt;?                                | x      |         | x       | 
+\+                                   | x      |         | x       | 
+\*                                   | x      |         | x       | 
+\-                                   | x      |         |         | x
 zero?                                | x      |         |         | x
 div                                  | x      |         |         | 
 mod                                  | x      |         |         | 
