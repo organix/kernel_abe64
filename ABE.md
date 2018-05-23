@@ -1,4 +1,4 @@
-# Actor Based Runtime (ABE)
+# Actor Based Environment (ABE)
 
 ABE is a platform for writing [Actors](https://en.wikipedia.org/wiki/Actor_model) in C.
 
@@ -21,7 +21,7 @@ The Boolean values `TRUE` and `FALSE` **must** be encoded as `1` and `0` respect
 
 ### Actor Message Events
 
-All computation in an actor system occurs in response to message events. Each actor message events delivers an immutable *message* to a target *actor*. Several macros are defined to allow easy access to components of the event from within a (C-coded) *behavior*:
+All computation in an actor system occurs in response to message events. Each actor message event delivers an immutable *message* to a target *actor*. Several macros are defined to allow easy access to components of the event from within a (C-coded) *behavior*:
 
  * `WHAT` &#8212; the *message* contents
  * `SELF` &#8212; the target *actor*
@@ -43,6 +43,115 @@ EVENT ---> | o | o-------> message
              v
           behavior
 ```
+
+### Fast Queue Manipulation
+
+A set of C-language macros define fast operations on a mutable double-ended queue (dequeue) structure. The actor message-queue in a configuration is managed this way. Each operation executes a small bounded number of instructions, which could be easily inlined.
+
+```
+#define CQ_EMPTY(q)     nilp(car(q))
+#define CQ_PUT(q, e)    rplacd((q), nilp(car(q)) ? rplaca((q), (e)) : rplacd(cdr(q), (e)))
+#define CQ_PUSH(q, e)   rplaca((q), nilp(rplacd((e), car(q))) ? rplacd((q), (e)) : (e))
+#define CQ_POP(q)       rplaca((q), cdr(car(q)))
+#define CQ_PEEK(q)      car(q)
+```
+
+Each queue is represented by a pair of pointers. The `car` points to the first entry in the queue, and the `cdr` points to the last entry in the queue. If the `car` pointer is `NIL`, the queue is empty. For convenience, the `cons` cell representing canonical `NIL` points to itself, so `car(NIL) == NIL` and `cdr(NIL) == NIL`.
+
+```
+                                          +------<------+
+           +---+---+                      |   +---+---+ |
+queue ---> | / | / |                NIL --+-> | o | o---+
+           +---+---+                      |   +-|-+---+
+           empty                          +--<--+
+```
+
+A queue entry is a `cons` pair where the `car` points to the data, and the `cdr` is `NIL`. The `cdr` will be used to link the entry into the queue structure. In order to `PUT` a new entry on the end of the queue:
+
+1. If the queue is empty (`car` is `NIL`),
+   1. Point the `car` of the queue to the new entry.
+1. Otherwise,
+   1. Point the `cdr` of the entry at the end of the queue to the new entry.
+1. Point the `cdr` of the queue to the new entry.
+
+After the first `PUT`:
+```
+           +---+---+
+queue ---> | o | o |
+           +-|-+-|-+
+             |   |
+             v   v
+           +---+---+
+           | 1 | / |
+           +---+---+
+```
+
+After the second `PUT`:
+```
+           +---+---+
+queue ---> | o | o-----------+
+           +-|-+---+         |
+             |               |
+             v               v
+           +---+---+       +---+---+
+           | 1 | o-------> | 2 | / |
+           +---+---+       +---+---+
+```
+
+In order to `POP` the entry at the beginning of the queue, we simply replace the `car` of the queue with the `cdr` of the first entry in the queue. This works even when the queue is empty, because `cdr(car(NIL)) == NIL`.
+
+After the first `POP`:
+```
+           +---+---+
+queue ---> | o | o-----------+
+           +-|-+---+         |
+             |               |
+             |               v
+             |             +---+---+
+             +-----------> | 2 | / |
+                           +---+---+
+```
+
+After the second `POP`:
+```
+           +---+---+
+queue ---> | / | X |
+           +---+---+
+```
+The queue is considered _empty_ because the `car` is `NIL`, so we don't care about the (possibly dangling) `cdr` pointer. It will be overwritten by the next `PUT` or `PUSH` anyway.
+
+In order to `PUSH` a new entry on the front of the queue:
+
+1. Point the `cdr` of the new entry to the first entry in the queue (which may be `NIL`).
+1. If the queue **was** empty (`car` was `NIL`),
+   1. Point the `cdr` of the queue to the new entry.
+1. Point the `car` of the queue to the new entry.
+
+After the first `PUSH`:
+```
+           +---+---+
+queue ---> | o | o |
+           +-|-+-|-+
+             |   |
+             v   v
+           +---+---+
+           | 1 | / |
+           +---+---+
+```
+
+After the second `PUSH`:
+```
+           +---+---+
+queue ---> | o | o-----------+
+           +-|-+---+         |
+             |               |
+             v               v
+           +---+---+       +---+---+
+           | 2 | o-------> | 1 | / |
+           +---+---+       +---+---+
+```
+
+**WARNING!** The `POP` macro _does not_ return the entry it removes from the queue. Use the `PEEK` macro to save a pointer to the first entry _before_ you `POP` it from the queue. In fact, it's good practice to check it for `NIL` (empty) and avoid the `POP` anyway, even though `POP(NIL)` is safe.
 
 ### Atomic Symbols
 
