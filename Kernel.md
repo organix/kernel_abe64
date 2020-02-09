@@ -140,7 +140,7 @@ Y                                    |        |         |         | x
 
 ## Internal Structure
 
-All values in the Kernel language are represented by actors in ABE. This includes numbers, Boolean `TRUE`/`FALSE`, pairs, and `NIL`. The C code implementation of Kernel features has visibility to the ABE-representation of Kernel objects. Several well-known Kernel objects are represented by statically-allocated actors. For example, the Kernel object with external representation `()` is represented at the ABE level by the actor `a_nil`, with behavior `null_type` and state `NIL`.
+All values in the Kernel language are represented by actors in [ABE](ABE.md). This includes numbers, Boolean `TRUE`/`FALSE`, pairs, and `NIL`. The C code implementation of Kernel features has visibility to the ABE-representation of Kernel objects. Several well-known Kernel objects are represented by statically-allocated actors. For example, the Kernel object with external representation `()` is represented at the ABE level by the actor `a_nil`, with behavior `null_type` and state `NIL`.
 
 ```
 a_nil
